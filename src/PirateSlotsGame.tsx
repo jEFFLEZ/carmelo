@@ -232,7 +232,8 @@ export default function PirateSlotsGame() {
                 </span>
             </h1>
 
-            <div style={{ display: "flex", gap: 16, alignItems: "center", marginTop: 8 }}>
+            {/* Barre volume/muet supprimée */}
+            {/* <div style={{ display: "flex", gap: 16, alignItems: "center", marginTop: 8 }}>
                 <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
                     <input type="checkbox" checked={sfx.muted} onChange={(e) => sfx.setMuted(e.target.checked)} />
                     Muet
@@ -251,7 +252,7 @@ export default function PirateSlotsGame() {
                 </div>
 
                 {!sfx.ready && <span style={{ opacity: 0.7 }}>(Clique une fois pour activer le son)</span>}
-            </div>
+            </div> */}
 
             <div style={{ display: "flex", gap: 24, alignItems: "center", marginTop: 0, marginBottom: 0 }}>
                 {/* Grille 5x5 */}

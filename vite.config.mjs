@@ -6,5 +6,6 @@ export default defineConfig({
   root: "./",
   build: {
     outDir: "dist"
-  }
+  },
+  assetsInclude: ['**/*.mp3', '**/*.wav', '**/*.ogg', '**/*.m4a'],
 });

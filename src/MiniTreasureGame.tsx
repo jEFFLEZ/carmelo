@@ -3,16 +3,20 @@ import marineImg from "./images/marine.png";
 import saphirImg from "./images/saphir.png";
 import rubisImg from "./images/rubis.png";
 import opaleImg from "./images/opale.png";
+import saphirSound from "./audio/saphir.m4a";
+import rubisSound from "./audio/rubis.m4a";
+import opaleSound from "./audio/opale.m4a";
+import drapImg from "./images/drap.png";
 
 const diamonds = [
-  { img: opaleImg, reward: 500, alt: "opale (gros gain)" },
-  { img: rubisImg, reward: 300, alt: "rubis (gain moyen)" },
-  { img: saphirImg, reward: 150, alt: "saphir (petit gain)" },
+  { img: opaleImg, reward: 500, alt: "opale (gros gain)", sound: opaleSound },
+  { img: rubisImg, reward: 300, alt: "rubis (gain moyen)", sound: rubisSound },
+  { img: saphirImg, reward: 150, alt: "saphir (petit gain)", sound: saphirSound },
 ];
 
 type Boat = {
   id: number;
-  diamond: { img: string; reward: number; alt: string } | null;
+  diamond: { img: string; reward: number; alt: string; sound: string } | null;
   sunk: boolean;
 };
 
@@ -48,6 +52,9 @@ export default function MiniTreasureGame({
     if (!boat) return;
     if (boat.diamond) {
       setTotalWin((w) => w + boat.diamond.reward);
+      // Joue le son associé à la pierre précieuse
+      const audio = new Audio(boat.diamond.sound);
+      audio.play();
     }
     const left = shotsLeft - 1;
     setShotsLeft(left);
@@ -66,7 +73,10 @@ export default function MiniTreasureGame({
 
   return (
     <div className="miniGameOverlay">
-      <h2>🏴‍☠️ Chasse au Trésor</h2>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, justifyContent: 'center' }}>
+        <img src={drapImg} alt="drapeau pirate" style={{ height: 48, verticalAlign: 'middle' }} />
+        <h2 style={{ margin: 0 }}>Chasse au Trésor</h2>
+      </div>
       <p>Tirs restants : {shotsLeft}</p>
       <div className="boatGrid">
         {boats.map((b) => (
@@ -75,21 +85,22 @@ export default function MiniTreasureGame({
             className={`boat ${b.sunk ? "sunk" : ""}`}
             onClick={() => shootBoat(b.id)}
             disabled={b.sunk || finished}
+            style={{ padding: 0, background: 'none', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
             {!b.sunk ? (
               <img
                 src={marineImg}
                 alt="bateau"
-                style={{ width: 48, height: 48 }}
+                style={{ width: 60, height: 60, objectFit: 'contain', display: 'block' }}
               />
             ) : b.diamond ? (
               <img
                 src={b.diamond.img}
                 alt={b.diamond.alt}
-                style={{ width: 36, height: 36 }}
+                style={{ width: 44, height: 44, objectFit: 'contain', display: 'block' }}
               />
             ) : (
-              "💥🌊"
+              <span style={{ fontSize: 32 }}>💥🌊</span>
             )}
           </button>
         ))}
