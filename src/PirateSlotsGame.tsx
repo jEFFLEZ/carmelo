@@ -48,19 +48,40 @@ function FxOverlay({ fx }: { fx: Fx }) {
 
 // ---- Grille 5x5 ----
 function spinGrid(): SlotSymbolId[][] {
-    // Ici tu peux décider si ELEPHANT/SOLDAT font partie du tirage :
-    // -> soit on les met en rareté à part, soit on ne les met jamais.
-    // Pour l’instant, on les met en ultra rare (ex: 1/250 chacune).
+    // Probabilités ajustées :
+    // PIRATE: 5%, ELEPHANT: 10%, SOLDAT: 15%, le reste réparti
     const pick = (): SlotSymbolId => {
         const r = Math.random();
-        if (r < 0.004) return "ELEPHANT"; // ~0.4%
-        if (r < 0.008) return "SOLDAT";  // ~0.4%
-        return pickWeightedPirate();      // le reste via ton weighted pirate
+        if (r < 0.05) return "PIRATE";
+        if (r < 0.15) return "ELEPHANT";
+        if (r < 0.30) return "SOLDAT";
+        return pickWeightedPirate(); // le reste via ton weighted pirate (hors PIRATE)
     };
-
     return Array.from({ length: 5 }, () =>
         Array.from({ length: 5 }, () => pick())
     );
+}
+
+// Détection des combinaisons gagnantes (lignes, colonnes, diagonales)
+function getWinningCombos(grid: SlotSymbolId[][]): number[][] {
+    const wins: number[][] = [];
+    // Lignes
+    for (let i = 0; i < 5; i++) {
+        if (grid[i].every(s => s === grid[i][0]))
+            wins.push([0,1,2,3,4].map(j => i*5+j));
+    }
+    // Colonnes
+    for (let j = 0; j < 5; j++) {
+        if ([0,1,2,3,4].every(i => grid[i][j] === grid[0][j]))
+            wins.push([0,1,2,3,4].map(i => i*5+j));
+    }
+    // Diagonale principale
+    if ([0,1,2,3,4].every(i => grid[i][i] === grid[0][0]))
+        wins.push([0,6,12,18,24]);
+    // Diagonale secondaire
+    if ([0,1,2,3,4].every(i => grid[i][4-i] === grid[0][4]))
+        wins.push([4,8,12,16,20]);
+    return wins;
 }
 
 function hasFiveElephants(grid: SlotSymbolId[][]): boolean {
@@ -96,8 +117,9 @@ export default function PirateSlotsGame() {
     const [showBooba, setShowBooba] = useState(false);
     const [showMiniGame, setShowMiniGame] = useState(false);
     const [showIntro, setShowIntro] = useState(true);
-    // Ajoute un état pour surbrillance des drapeaux pirates
+    // Ajoute un état pour surbrillance des drapeaux pirates et des cases gagnantes
     const [highlightPirates, setHighlightPirates] = useState<number[]>([]);
+    const [highlightWins, setHighlightWins] = useState<number[]>([]);
 
     const canSpin = credits >= bet && bet > 0;
     const totalWon = useMemo(() => log.reduce((sum, x) => sum + x.payout, 0), [log]);
@@ -121,7 +143,8 @@ export default function PirateSlotsGame() {
         sfx.play("click", { gain: 0.7 });
         setCredits((c) => c - bet);
         setSpinAnim(true);
-        setHighlightPirates([]); // reset highlight
+        setHighlightPirates([]);
+        setHighlightWins([]);
         triggerFx("SPIN", 500);
         sfx.play("spin", { gain: 0.7 });
         sfx.play("reelStop", { delayMs: 220, gain: 0.85, rate: 1.0 });
@@ -157,6 +180,9 @@ export default function PirateSlotsGame() {
             // Highlight pirates
             const piratesIdx = flat.map((s, i) => s === "PIRATE" ? i : -1).filter(i => i !== -1);
             setHighlightPirates(piratesIdx);
+            // Highlight winning combos
+            const winCombos = getWinningCombos(grid).flat();
+            setHighlightWins(winCombos);
             const hasBat = flat.includes("BAT");
             const hasBlunder = flat.includes("BLUNDERBUSS");
             if (hasBat) {
@@ -173,8 +199,8 @@ export default function PirateSlotsGame() {
             if (jackpotElephant) {
                 setShowBooba(true);
             }
-            // Déclenche le mini-jeu si exactement 3 drapeaux
-            if (hasThreeFlags(grid)) {
+            // Déclenche le mini-jeu si 3 drapeaux
+            if (flat.filter(s => s === "PIRATE").length === 3) {
                 setShowMiniGame(true);
                 const audio = new Audio(rireMp3);
                 audio.play();
@@ -269,7 +295,8 @@ export default function PirateSlotsGame() {
                             key={idx}
                             className={
                                 (spinAnim ? "card-anim spin rotate" : "card-anim") +
-                                (highlightPirates.includes(idx) ? " pirate-highlight" : "")
+                                (highlightPirates.includes(idx) ? " pirate-highlight-multi" : "") +
+                                (highlightWins.includes(idx) ? " win-highlight" : "")
                             }
                             style={{
                                 display: "flex",
@@ -280,7 +307,7 @@ export default function PirateSlotsGame() {
                                 height: "100%"
                             }}
                         >
-                            {React.cloneElement(symbolImages[sym] as React.ReactElement, { style: { height: '8vw', maxHeight: 120, width: 'auto', maxWidth: '90%' } })}
+                            {React.cloneElement(symbolImages[sym] as React.ReactElement, { style: { height: '8vw', maxHeight: 120, width: 'auto', maxWidth: '90%', objectFit: 'contain' } })}
                         </span>
                     ))}
                 </div>
