@@ -616,6 +616,7 @@ export default function PirateSlotsGame() {
                   <div className="slot-grid-max" style={{ height: '50vh', maxHeight: '60vh', minHeight: 180 }}>
                       {reels.flat().map((sym, idx) => {
                           const isWin = highlightWins.includes(idx);
+                          const symbolElement = symbolImages[sym];
                           return (
                               <span
                                   key={idx}
@@ -643,7 +644,10 @@ export default function PirateSlotsGame() {
                                       transition: "box-shadow 0.2s, background 0.2s, border 0.2s"
                                   }}
                               >
-                                  {React.cloneElement(symbolImages[sym], { style: { height: '8vw', maxHeight: 120, width: 'auto', maxWidth: '90%', objectFit: 'contain' } })}
+                                  {symbolElement
+                                      ? React.cloneElement(symbolElement, { style: { height: '8vw', maxHeight: 120, width: 'auto', maxWidth: '90%', objectFit: 'contain' } })
+                                      : <span style={{ color: 'red', fontWeight: 700 }}>?</span>
+                                  }
                               </span>
                           );
                       })}
