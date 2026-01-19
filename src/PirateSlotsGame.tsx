@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useRef } from "react";
 import { pickWeightedPirate, PirateSymbolId } from "./pirateSlots";
 import { useSound } from "./audio/useSound";
 import "./PirateSlotsGame.css";
@@ -19,6 +19,7 @@ import boobaVideo from "./videos/booba.mp4";
 import rireMp3 from "./audio/rire.mp3";
 import oneVideo from "./videos/one.mp4";
 import batSound from "./audio/bat.mp3";
+import pirateMusic from "./audio/pirate.m4a";
 
 type ExtraSymbolId = "ELEPHANT" | "SOLDAT";
 type SlotSymbolId = PirateSymbolId | ExtraSymbolId;
@@ -179,13 +180,60 @@ export default function PirateSlotsGame() {
     const [highlightWins, setHighlightWins] = useState<number[]>([]);
     // Ajoute un état pour le spin colonne par colonne
     const [spinningCols, setSpinningCols] = useState([false, false, false, false, false]);
+    const [isSpinning, setIsSpinning] = useState(false);
+    const spinTimeouts = useRef<NodeJS.Timeout[]>([]);
+    const pirateAudioRef = useRef<HTMLAudioElement | null>(null);
+    const [musicReady, setMusicReady] = useState(false);
 
     const canSpin = credits >= bet && bet > 0;
     const totalWon = useMemo(() => log.reduce((sum, x) => sum + x.payout, 0), [log]);
 
+    React.useEffect(() => {
+        if (!pirateAudioRef.current) {
+            pirateAudioRef.current = new Audio(pirateMusic);
+            pirateAudioRef.current.loop = true;
+            pirateAudioRef.current.volume = 0.7;
+            pirateAudioRef.current.autoplay = true;
+            pirateAudioRef.current.addEventListener("canplaythrough", () => setMusicReady(true));
+        }
+        if (musicReady) {
+            pirateAudioRef.current!.play();
+        }
+        return () => {
+            pirateAudioRef.current?.pause();
+        };
+    }, [musicReady]);
+
+    function fadeMusic(vol: number, duration: number = 600) {
+        const audio = pirateAudioRef.current;
+        if (!audio) return;
+        const start = audio.volume;
+        const step = (vol - start) / (duration / 50);
+        let i = 0;
+        const fade = setInterval(() => {
+            i++;
+            audio.volume = Math.max(0, Math.min(1, audio.volume + step));
+            if ((step < 0 && audio.volume <= vol) || (step > 0 && audio.volume >= vol) || i > duration / 50) {
+                audio.volume = vol;
+                clearInterval(fade);
+            }
+        }, 50);
+    }
+
+    function handleEventStart() {
+        fadeMusic(0, 600);
+    }
+    function handleEventEnd() {
+        fadeMusic(0.7, 800);
+    }
+
     function triggerFx(kind: Fx, ms = 700) {
         setFx(kind);
-        window.setTimeout(() => setFx("NONE"), ms);
+        handleEventStart();
+        window.setTimeout(() => {
+            setFx("NONE");
+            handleEventEnd();
+        }, ms);
     }
 
     async function unlockAudioIfNeeded() {
@@ -198,6 +246,16 @@ export default function PirateSlotsGame() {
 
     // Nouvelle fonction de spin colonne par colonne
     async function spin() {
+        if (isSpinning) {
+            // STOP: Arrête tous les timeouts et affiche le résultat final
+            spinTimeouts.current.forEach(t => clearTimeout(t));
+            setSpinningCols([false, false, false, false, false]);
+            setSpinAnim(false);
+            setIsSpinning(false);
+            // Affiche le résultat final immédiatement
+            finalizeSpin();
+            return;
+        }
         if (!canSpin) return;
         await unlockAudioIfNeeded();
         sfx.play("click", { gain: 0.7 });
@@ -208,26 +266,37 @@ export default function PirateSlotsGame() {
         triggerFx("SPIN", 500);
         sfx.play("spin", { gain: 0.7 });
         setSpinningCols([true, true, true, true, true]);
+        setIsSpinning(true);
         let currentReels = Array.from({ length: 5 }, () => Array(5).fill(null));
         setReels(currentReels as SlotSymbolId[][]);
+        spinTimeouts.current = [];
         for (let col = 0; col < 5; col++) {
-            await new Promise(res => setTimeout(res, 400));
-            const colSymbols = spinColumn(col);
-            for (let row = 0; row < 5; row++) {
-                currentReels[row][col] = colSymbols[row];
-            }
-            setReels(currentReels.map(r => [...r]));
+            const t = setTimeout(() => {
+                const colSymbols = spinColumn(col);
+                for (let row = 0; row < 5; row++) {
+                    currentReels[row][col] = colSymbols[row];
+                }
+                setReels(currentReels.map(r => [...r]));
+                if (col === 4) {
+                    setSpinAnim(false);
+                    setSpinningCols([false, false, false, false, false]);
+                    setIsSpinning(false);
+                    finalizeSpin(currentReels as SlotSymbolId[][]);
+                }
+            }, col * 400);
+            spinTimeouts.current.push(t);
         }
-        setSpinAnim(false);
-        setSpinningCols([false, false, false, false, false]);
-        const grid = currentReels as SlotSymbolId[][];
+    }
+
+    function finalizeSpin(grid?: SlotSymbolId[][]) {
+        const finalGrid = grid || reels;
         let payout = 0;
-        const jackpotElephant = hasFiveElephants(grid);
+        const jackpotElephant = hasFiveElephants(finalGrid);
         if (jackpotElephant) {
             payout = bet * 50;
             triggerFx("JACKPOT", 1400);
         } else {
-            const flat = grid.flat();
+            const flat = finalGrid.flat();
             const coinCount = flat.filter((s) => s === "COIN").length;
             if (coinCount >= 7) payout = bet * 5;
             else if (coinCount >= 5) payout = bet * 2;
@@ -239,44 +308,31 @@ export default function PirateSlotsGame() {
             setCredits((c) => c + payout);
             setShowCoinDrop(true);
             sfx.play("coins", { gain: 0.9 });
-            window.setTimeout(() => setShowCoinDrop(false), 1200);
+            setTimeout(() => setShowCoinDrop(false), 1200);
             if (payout >= bet * 50) sfx.play("jackpot", { gain: 1.0 });
             else if (payout >= bet * 5) sfx.play("bigwin", { gain: 0.95 });
             else sfx.play("win", { gain: 0.85 });
         }
-        const flat = grid.flat();
+        const flat = finalGrid.flat();
         // Highlight pirates
         const piratesIdx = flat.map((s, i) => s === "PIRATE" ? i : -1).filter(i => i !== -1);
         setHighlightPirates(piratesIdx);
         // Highlight winning combos
-        const winCombos = getWinningCombos(grid).flat();
+        const winCombos = getWinningCombos(finalGrid).flat();
         setHighlightWins(winCombos);
-        const hasBat = flat.includes("BAT");
-        const hasBlunder = flat.includes("BLUNDERBUSS");
-        if (hasBat) {
-            setShowBat(true);
-            sfx.play("bat", { gain: 0.85 });
-            window.setTimeout(() => setShowBat(false), 1200);
+        if (hasFiveBats(finalGrid)) {
+            const audio = new Audio(batSound);
+            audio.play();
         }
-        if (hasBlunder) {
-            setShowShot(true);
-            sfx.play("blunderbuss", { gain: 0.95 });
-            window.setTimeout(() => setShowShot(false), 800);
-        }
-        if (jackpotElephant) {
+        if (hasFiveElephants(finalGrid)) {
             setShowBooba(true);
         }
-        // Déclenche le mini-jeu si 3 drapeaux
         if (flat.filter(s => s === "PIRATE").length === 3) {
             setShowMiniGame(true);
             const audio = new Audio(rireMp3);
             audio.play();
         }
-        setLog((prev) => [{ time: Date.now(), bet, reels: grid, payout }, ...prev].slice(0, 30));
-        if (hasFiveBats(grid)) {
-            const audio = new Audio(batSound);
-            audio.play();
-        }
+        setLog((prev) => [{ time: Date.now(), bet, reels: finalGrid, payout }, ...prev].slice(0, 30));
     }
 
     return (
@@ -385,16 +441,16 @@ export default function PirateSlotsGame() {
                 </div>
             </div>
 
-            {/* Bouton SPIN centré et visible */}
+            {/* Bouton SPIN/STOP */}
             <div style={{ display: 'flex', justifyContent: 'center', margin: '16px 0 0 0', width: '100%' }}>
                 <button
                     onClick={spin}
-                    disabled={!canSpin}
+                    disabled={!canSpin && !isSpinning}
                     style={{
                         padding: '18px 48px',
                         fontSize: 32,
                         fontWeight: 700,
-                        cursor: canSpin ? 'pointer' : 'not-allowed',
+                        cursor: (canSpin || isSpinning) ? 'pointer' : 'not-allowed',
                         background: '#ff9800',
                         color: '#222',
                         borderRadius: 12,
@@ -402,10 +458,10 @@ export default function PirateSlotsGame() {
                         boxShadow: '0 2px 16px #000',
                         margin: '0 auto',
                         transition: 'background 0.2s',
-                        opacity: canSpin ? 1 : 0.5
+                        opacity: (canSpin || isSpinning) ? 1 : 0.5
                     }}
                 >
-                    SPIN
+                    {isSpinning ? 'STOP' : 'SPIN'}
                 </button>
             </div>
 
@@ -486,8 +542,9 @@ export default function PirateSlotsGame() {
                     <video
                         src={boobaVideo}
                         autoPlay
-                        loop
-                        muted
+                        controls={false}
+                        loop={false}
+                        muted={false}
                         style={{
                             maxWidth: "90vw",
                             maxHeight: "80vh",
@@ -496,6 +553,7 @@ export default function PirateSlotsGame() {
                             opacity: 0.5,
                             pointerEvents: "none"
                         }}
+                        onEnded={() => setShowBooba(false)}
                     />
                 </div>
             )}
@@ -503,9 +561,10 @@ export default function PirateSlotsGame() {
             {/* Mini-jeu Chasse au Trésor */}
             {showMiniGame && (
                 <MiniTreasureGame
-                    onClose={() => setShowMiniGame(false)}
+                    onClose={() => { handleEventEnd(); setShowMiniGame(false); }}
                     onWin={(reward) => {
                         setCredits(c => c + reward);
+                        handleEventEnd();
                         setShowMiniGame(false);
                     }}
                 />
