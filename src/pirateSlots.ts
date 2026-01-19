@@ -13,7 +13,7 @@ export const pirateSymbols: { id: PirateSymbolId; weight: number; emoji: string 
   { id: "PARROT", weight: 9, emoji: "🦜" } // parrot
 ];
 
-function pickWeightedPirate(): PirateSymbolId {
+export function pickWeightedPirate(): PirateSymbolId {
   const total = pirateSymbols.reduce((s, x) => s + x.weight, 0);
   let roll = randInt(1, total);
   for (const s of pirateSymbols) {
