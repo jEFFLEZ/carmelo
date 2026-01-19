@@ -10,6 +10,8 @@ import chauveImg from "./images/chauve.png";
 import perroImg from "./images/perro.png";
 import gunImg from "./images/gun.png";
 import coffreImg from "./images/coffre.png";
+import drapImg from "./images/drap.png";
+import mapImg from "./images/map.png";
 
 // IMPORTANT: évite les accents dans les dossiers -> ./videos/booba.mp4
 import boobaVideo from "./videos/booba.mp4";
@@ -20,12 +22,12 @@ type SlotSymbolId = PirateSymbolId | ExtraSymbolId;
 type Fx = "NONE" | "WIN" | "BIGWIN" | "JACKPOT" | "SPIN";
 
 const symbolImages: Record<SlotSymbolId, React.ReactNode> = {
-    PIRATE: <img src={require("./images/drap.png")} alt="drapeau pirate" style={{ height: 40 }} />,
+    PIRATE: <img src={drapImg} alt="drapeau pirate" style={{ height: 40 }} />,
     CHEST: <img src={coffreImg} alt="coffre" style={{ height: 40 }} />,
     COIN: <img src={elephantImg} alt="éléphant" style={{ height: 40 }} />,
     BAT: <img src={chauveImg} alt="chauve-souris" style={{ height: 40 }} />,
     BLUNDERBUSS: <img src={gunImg} alt="pistolet pirate" style={{ height: 40 }} />,
-    MAP: <img src={require("./images/map.png")} alt="carte au trésor" style={{ height: 40 }} />,
+    MAP: <img src={mapImg} alt="carte au trésor" style={{ height: 40 }} />,
     PARROT: <img src={perroImg} alt="perroquet pirate" style={{ height: 40 }} />,
     ELEPHANT: <img src={elephantImg} alt="éléphant" style={{ height: 40 }} />,
     SOLDAT: <img src={soldatImg} alt="soldat spartiate" style={{ height: 40 }} />

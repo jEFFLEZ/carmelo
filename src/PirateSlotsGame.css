@@ -1,7 +1,8 @@
 /* PirateSlotsGame.css - Animations & ambiance Qfluch + FX visuels */
 
 body, .pirate-bg {
-  background: url("/src/images/fond.png") center center/cover no-repeat fixed;
+  background: url("/src/images/fond.png") center center no-repeat fixed;
+  background-size: cover;
   min-height: 100vh;
   overflow: hidden;
 }
