@@ -198,7 +198,7 @@ export default function PirateSlotsGame() {
             boxShadow: "0 2px 16px #000"
           }}
         >
-          {reels.map((row, rowIdx) =>
+          {reels.flatMap((row, rowIdx) =>
             row.map((s, colIdx) => (
               <span key={rowIdx + "-" + colIdx} className={spinAnim ? "card-anim spin" : "card-anim"}>
                 {symbolImages[s] || s}
