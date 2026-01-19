@@ -3,3 +3,7 @@ dist/
 .vs/
 *.log
 .env
+# Ignore large audio files
+src/audio/pirate.mp3
+src/audio/pirate.m4a
+# src/audio/pirate2.m4a est gardé pour l'ambiance de fond

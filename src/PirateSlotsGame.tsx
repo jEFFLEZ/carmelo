@@ -19,7 +19,7 @@ import boobaVideo from "./videos/booba.mp4";
 import rireMp3 from "./audio/rire.mp3";
 import oneVideo from "./videos/one.mp4";
 import batSound from "./audio/bat.mp3";
-import pirateMusic from "./audio/pirate.mp3";
+import pirateMusic from "./audio/pirate2.m4a";
 
 type ExtraSymbolId = "ELEPHANT" | "SOLDAT";
 type SlotSymbolId = PirateSymbolId | ExtraSymbolId;
