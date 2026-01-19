@@ -377,7 +377,9 @@ export default function PirateSlotsGame() {
                                 height: "100%"
                             }}
                         >
-                            {React.cloneElement(symbolImages[sym] as React.ReactElement, { style: { height: '8vw', maxHeight: 120, width: 'auto', maxWidth: '90%', objectFit: 'contain' } })}
+                            {symbolImages[sym] && React.isValidElement(symbolImages[sym])
+                                ? React.cloneElement(symbolImages[sym] as React.ReactElement, { style: { height: '8vw', maxHeight: 120, width: 'auto', maxWidth: '90%', objectFit: 'contain' } })
+                                : null}
                         </span>
                     ))}
                 </div>
