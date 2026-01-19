@@ -1,0 +1,140 @@
+/* PirateSlotsGame.css - Animations & ambiance Qfluch + FX visuels */
+
+body, .pirate-bg {
+  background: radial-gradient(ellipse at center, #232a33 0%, #0a0a1a 100%);
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+}
+
+.pirate-brume {
+  position: absolute;
+  top: 0; left: 0; width: 100vw; height: 100vh;
+  pointer-events: none;
+  background: url('https://i.imgur.com/1Q9ZQ9Q.png') repeat;
+  opacity: 0.18;
+  animation: brumeMove 18s linear infinite;
+  z-index: 0;
+}
+@keyframes brumeMove {
+  0% { background-position: 0 0; }
+  100% { background-position: 400px 200px; }
+}
+
+.bat-animation {
+  position: absolute;
+  left: -120px;
+  top: 60px;
+  width: 80px; height: 40px;
+  background: url('https://i.imgur.com/2Q9ZQ9Q.png') center/contain no-repeat;
+  animation: batFly 1.2s cubic-bezier(.7,.2,.3,1) forwards;
+  z-index: 10;
+}
+@keyframes batFly {
+  0% { left: -120px; top: 60px; opacity: 0; }
+  20% { opacity: 1; }
+  80% { left: 70vw; top: 120px; opacity: 1; }
+  100% { left: 100vw; top: 40px; opacity: 0; }
+}
+
+.coin-drop-animation {
+  position: absolute;
+  left: 50vw;
+  top: 0;
+  width: 40px; height: 40px;
+  background: url('https://i.imgur.com/3Q9ZQ9Q.png') center/contain no-repeat;
+  animation: coinDrop 1.2s cubic-bezier(.7,.2,.3,1) forwards;
+  z-index: 10;
+}
+@keyframes coinDrop {
+  0% { top: 0; opacity: 0; }
+  20% { opacity: 1; }
+  80% { top: 70vh; opacity: 1; }
+  100% { top: 100vh; opacity: 0; }
+}
+
+.blunderbuss-shot-animation {
+  position: absolute;
+  left: 48vw; top: 30vh;
+  width: 120px; height: 120px;
+  background: radial-gradient(circle, #fffbe6 0%, #ff9800 60%, transparent 100%);
+  opacity: 0.7;
+  animation: shotFlash 0.5s linear forwards;
+  z-index: 20;
+}
+@keyframes shotFlash {
+  0% { opacity: 0.7; transform: scale(0.7); }
+  50% { opacity: 1; transform: scale(1.2); }
+  100% { opacity: 0; transform: scale(1.5); }
+}
+
+.card-anim {
+  display: inline-block;
+  transition: transform 0.5s cubic-bezier(.7,.2,.3,1), box-shadow 0.5s;
+  will-change: transform;
+}
+.card-anim.spin {
+  transform: rotateY(360deg) scale(1.1);
+  box-shadow: 0 0 32px #ffe08299;
+}
+
+.lantern-glow {
+  position: absolute;
+  right: 40px; top: 40px;
+  width: 120px; height: 120px;
+  background: radial-gradient(circle, #ffe082 0%, transparent 80%);
+  opacity: 0.18;
+  z-index: 1;
+}
+
+/* FX visuels synchronisés avec le jeu */
+.gameRoot { position: relative; }
+.fxOverlay {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  z-index: 100;
+}
+
+.gameRoot.fx-win .fxOverlay.fx-win {
+  opacity: 1;
+  animation: flash 0.25s ease-in-out 0s 3;
+  background: radial-gradient(circle, #ffe08288 0%, transparent 80%);
+}
+
+.gameRoot.fx-bigwin .fxOverlay.fx-bigwin {
+  opacity: 1;
+  animation: shake 0.7s ease-in-out, flash 0.18s ease-in-out 0s 4;
+  background: radial-gradient(circle, #ff980088 0%, transparent 80%);
+}
+
+.gameRoot.fx-jackpot .fxOverlay.fx-jackpot {
+  opacity: 1;
+  animation: jackpotFlash 1.2s cubic-bezier(.7,.2,.3,1);
+  background: repeating-linear-gradient(135deg, #ffe08244 0 20px, #ff980044 20px 40px);
+}
+
+.gameRoot.fx-spin .fxOverlay.fx-spin {
+  opacity: 0.5;
+  animation: spinPulse 0.5s cubic-bezier(.7,.2,.3,1);
+  background: radial-gradient(circle, #fffbe633 0%, transparent 80%);
+}
+
+@keyframes flash {
+  0%{opacity:0} 50%{opacity:1} 100%{opacity:0}
+}
+@keyframes shake {
+  0%{transform:translate(0,0)}
+  20%{transform:translate(-6px,2px)}
+  40%{transform:translate(6px,-2px)}
+  60%{transform:translate(-4px,-1px)}
+  80%{transform:translate(4px,1px)}
+  100%{transform:translate(0,0)}
+}
+@keyframes jackpotFlash {
+  0%{opacity:0.2} 20%{opacity:1} 60%{opacity:1} 100%{opacity:0}
+}
+@keyframes spinPulse {
+  0%{opacity:0.5} 100%{opacity:0}
+}
