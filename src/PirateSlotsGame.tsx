@@ -101,12 +101,52 @@ function hasFiveElephants(grid: SlotSymbolId[][]): boolean {
     return false;
 }
 
+// Nouvelle fonction pour générer une colonne avec contraintes de drapeau pirate
+function spinColumn(colIdx: number): SlotSymbolId[] {
+    // Probabilités personnalisées
+    // Drapeau pirate rare et seulement sur col 0, 2, 4
+    const symbols: { id: SlotSymbolId; prob: number }[] = [
+        { id: "ELEPHANT", prob: 0.13 },
+        { id: "SOLDAT", prob: 0.18 },
+        { id: "COIN", prob: 0.15 },
+        { id: "BAT", prob: 0.13 },
+        { id: "BLUNDERBUSS", prob: 0.13 },
+        { id: "MAP", prob: 0.13 },
+        { id: "PARROT", prob: 0.13 },
+    ];
+    if (colIdx === 0 || colIdx === 2 || colIdx === 4) {
+        symbols.push({ id: "PIRATE", prob: 0.05 });
+    }
+    // Normalise
+    const total = symbols.reduce((sum, s) => sum + s.prob, 0);
+    const norm = symbols.map(s => ({ ...s, prob: s.prob / total }));
+    // Pick one symbol
+    function pickOne() {
+        let r = Math.random();
+        for (const s of norm) {
+            if (r < s.prob) return s.id;
+            r -= s.prob;
+        }
+        return norm[norm.length - 1].id;
+    }
+    return Array.from({ length: 5 }, () => pickOne());
+}
+
+// Nouvelle fonction pour générer la grille colonne par colonne
+function spinGridCols(): SlotSymbolId[][] {
+    const cols = [0, 1, 2, 3, 4].map(colIdx => spinColumn(colIdx));
+    // Transpose pour obtenir lignes
+    return Array.from({ length: 5 }, (_, rowIdx) =>
+        cols.map(col => col[rowIdx])
+    );
+}
+
 export default function PirateSlotsGame() {
     const sfx = useSound();
 
     const [credits, setCredits] = useState<number>(1000);
     const [bet, setBet] = useState<number>(20);
-    const [reels, setReels] = useState<SlotSymbolId[][]>(() => spinGrid());
+    const [reels, setReels] = useState<SlotSymbolId[][]>(() => spinGridCols());
     const [lastPayout, setLastPayout] = useState<number>(0);
     const [log, setLog] = useState<Array<{ time: number; bet: number; reels: SlotSymbolId[][]; payout: number }>>([]);
     const [showBat, setShowBat] = useState(false);
@@ -120,6 +160,8 @@ export default function PirateSlotsGame() {
     // Ajoute un état pour surbrillance des drapeaux pirates et des cases gagnantes
     const [highlightPirates, setHighlightPirates] = useState<number[]>([]);
     const [highlightWins, setHighlightWins] = useState<number[]>([]);
+    // Ajoute un état pour le spin colonne par colonne
+    const [spinningCols, setSpinningCols] = useState([false, false, false, false, false]);
 
     const canSpin = credits >= bet && bet > 0;
     const totalWon = useMemo(() => log.reduce((sum, x) => sum + x.payout, 0), [log]);
@@ -137,6 +179,7 @@ export default function PirateSlotsGame() {
         return grid.flat().filter(s => s === "PIRATE").length === 3;
     }
 
+    // Nouvelle fonction de spin colonne par colonne
     async function spin() {
         if (!canSpin) return;
         await unlockAudioIfNeeded();
@@ -147,66 +190,73 @@ export default function PirateSlotsGame() {
         setHighlightWins([]);
         triggerFx("SPIN", 500);
         sfx.play("spin", { gain: 0.7 });
-        sfx.play("reelStop", { delayMs: 220, gain: 0.85, rate: 1.0 });
-        sfx.play("reelStop", { delayMs: 360, gain: 0.85, rate: 1.05 });
-        sfx.play("reelStop", { delayMs: 520, gain: 0.85, rate: 1.1 });
-        const grid = spinGrid();
-        window.setTimeout(() => {
-            setReels(grid);
-            let payout = 0;
-            const jackpotElephant = hasFiveElephants(grid);
-            if (jackpotElephant) {
-                payout = bet * 50;
-                triggerFx("JACKPOT", 1400);
-            } else {
-                const flat = grid.flat();
-                const coinCount = flat.filter((s) => s === "COIN").length;
-                if (coinCount >= 7) payout = bet * 5;
-                else if (coinCount >= 5) payout = bet * 2;
-                if (payout >= bet * 5) triggerFx("BIGWIN", 1000);
-                else if (payout > 0) triggerFx("WIN", 800);
+        setSpinningCols([true, true, true, true, true]);
+        // Animation colonne par colonne
+        let currentReels = Array.from({ length: 5 }, () => Array(5).fill(null));
+        setReels(currentReels as SlotSymbolId[][]);
+        for (let col = 0; col < 5; col++) {
+            await new Promise(res => setTimeout(res, 400));
+            const colSymbols = spinColumn(col);
+            for (let row = 0; row < 5; row++) {
+                currentReels[row][col] = colSymbols[row];
             }
-            setLastPayout(payout);
-            if (payout > 0) {
-                setCredits((c) => c + payout);
-                setShowCoinDrop(true);
-                sfx.play("coins", { gain: 0.9 });
-                window.setTimeout(() => setShowCoinDrop(false), 1200);
-                if (payout >= bet * 50) sfx.play("jackpot", { gain: 1.0 });
-                else if (payout >= bet * 5) sfx.play("bigwin", { gain: 0.95 });
-                else sfx.play("win", { gain: 0.85 });
-            }
+            setReels(currentReels.map(r => [...r]));
+        }
+        setSpinAnim(false);
+        setSpinningCols([false, false, false, false, false]);
+        const grid = currentReels;
+        let payout = 0;
+        const jackpotElephant = hasFiveElephants(grid);
+        if (jackpotElephant) {
+            payout = bet * 50;
+            triggerFx("JACKPOT", 1400);
+        } else {
             const flat = grid.flat();
-            // Highlight pirates
-            const piratesIdx = flat.map((s, i) => s === "PIRATE" ? i : -1).filter(i => i !== -1);
-            setHighlightPirates(piratesIdx);
-            // Highlight winning combos
-            const winCombos = getWinningCombos(grid).flat();
-            setHighlightWins(winCombos);
-            const hasBat = flat.includes("BAT");
-            const hasBlunder = flat.includes("BLUNDERBUSS");
-            if (hasBat) {
-                setShowBat(true);
-                sfx.play("bat", { gain: 0.85 });
-                window.setTimeout(() => setShowBat(false), 1200);
-            }
-            if (hasBlunder) {
-                setShowShot(true);
-                sfx.play("blunderbuss", { gain: 0.95 });
-                window.setTimeout(() => setShowShot(false), 800);
-            }
-            setSpinAnim(false);
-            if (jackpotElephant) {
-                setShowBooba(true);
-            }
-            // Déclenche le mini-jeu si 3 drapeaux
-            if (flat.filter(s => s === "PIRATE").length === 3) {
-                setShowMiniGame(true);
-                const audio = new Audio(rireMp3);
-                audio.play();
-            }
-            setLog((prev) => [{ time: Date.now(), bet, reels: grid, payout }, ...prev].slice(0, 30));
-        }, 600);
+            const coinCount = flat.filter((s) => s === "COIN").length;
+            if (coinCount >= 7) payout = bet * 5;
+            else if (coinCount >= 5) payout = bet * 2;
+            if (payout >= bet * 5) triggerFx("BIGWIN", 1000);
+            else if (payout > 0) triggerFx("WIN", 800);
+        }
+        setLastPayout(payout);
+        if (payout > 0) {
+            setCredits((c) => c + payout);
+            setShowCoinDrop(true);
+            sfx.play("coins", { gain: 0.9 });
+            window.setTimeout(() => setShowCoinDrop(false), 1200);
+            if (payout >= bet * 50) sfx.play("jackpot", { gain: 1.0 });
+            else if (payout >= bet * 5) sfx.play("bigwin", { gain: 0.95 });
+            else sfx.play("win", { gain: 0.85 });
+        }
+        const flat = grid.flat();
+        // Highlight pirates
+        const piratesIdx = flat.map((s, i) => s === "PIRATE" ? i : -1).filter(i => i !== -1);
+        setHighlightPirates(piratesIdx);
+        // Highlight winning combos
+        const winCombos = getWinningCombos(grid).flat();
+        setHighlightWins(winCombos);
+        const hasBat = flat.includes("BAT");
+        const hasBlunder = flat.includes("BLUNDERBUSS");
+        if (hasBat) {
+            setShowBat(true);
+            sfx.play("bat", { gain: 0.85 });
+            window.setTimeout(() => setShowBat(false), 1200);
+        }
+        if (hasBlunder) {
+            setShowShot(true);
+            sfx.play("blunderbuss", { gain: 0.95 });
+            window.setTimeout(() => setShowShot(false), 800);
+        }
+        if (jackpotElephant) {
+            setShowBooba(true);
+        }
+        // Déclenche le mini-jeu si 3 drapeaux
+        if (flat.filter(s => s === "PIRATE").length === 3) {
+            setShowMiniGame(true);
+            const audio = new Audio(rireMp3);
+            audio.play();
+        }
+        setLog((prev) => [{ time: Date.now(), bet, reels: grid, payout }, ...prev].slice(0, 30));
     }
 
     return (
