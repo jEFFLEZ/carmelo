@@ -611,7 +611,7 @@ export default function PirateSlotsGame() {
                 <button
                     onClick={spin}
                     disabled={!canSpin && !isSpinning}
-                    style({
+                    style={{
                         padding: '18px 48px',
                         fontSize: 32,
                         fontWeight: 700,
@@ -627,7 +627,7 @@ export default function PirateSlotsGame() {
                         outline: 'none',
                         position: 'relative',
                         zIndex: 2
-                    })
+                    }}
                 >
                     {isSpinning ? 'STOP' : 'SPIN'}
                 </button>
