@@ -255,7 +255,7 @@ export default function PirateSlotsGame() {
 
             <div style={{ display: "flex", gap: 24, alignItems: "center", marginTop: 0, marginBottom: 0 }}>
                 {/* Grille 5x5 */}
-                <div className="slot-grid-max" style={{ height: '70vh', maxHeight: '80vh' }}>
+                <div className="slot-grid-max" style={{ height: '50vh', maxHeight: '60vh', minHeight: 320 }}>
                     {[].concat.apply([], reels).map((sym, idx) => (
                         <span
                             key={idx}
@@ -276,7 +276,7 @@ export default function PirateSlotsGame() {
             </div>
 
             {/* Bouton SPIN centré et visible */}
-            <div style={{ display: 'flex', justifyContent: 'center', margin: '8px 0 0 0', width: '100%' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', margin: '16px 0 0 0', width: '100%' }}>
                 <button
                     onClick={spin}
                     disabled={!canSpin}
