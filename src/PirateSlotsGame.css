@@ -285,3 +285,45 @@ button:focus {
   pointer-events: none;
   z-index: 20;
 }
+
+@media (max-width: 600px) {
+  .slot-grid-max {
+    height: 60vw !important;
+    min-height: 180px !important;
+    max-height: 80vw !important;
+    grid-template-columns: repeat(5, 1fr) !important;
+    grid-template-rows: repeat(5, 1fr) !important;
+  }
+  .gameRoot {
+    padding: 4vw !important;
+    font-size: 4vw !important;
+  }
+  h1 {
+    font-size: 8vw !important;
+    margin: 6vw 0 4vw 0 !important;
+  }
+  .card-anim {
+    min-height: 32px !important;
+    font-size: 4vw !important;
+  }
+  button {
+    font-size: 5vw !important;
+    padding: 3vw 8vw !important;
+    border-radius: 3vw !important;
+  }
+  .win-line-overlay {
+    z-index: 30 !important;
+  }
+  .pirate-brume, .lantern-glow, .fxOverlay {
+    z-index: 1 !important;
+  }
+  .historique, .credits-bar {
+    font-size: 3.5vw !important;
+    padding: 2vw 0 1vw 0 !important;
+  }
+}
+
+/* Améliore le touch sur mobile */
+button, .card-anim {
+  touch-action: manipulation;
+}
