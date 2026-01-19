@@ -1,7 +1,7 @@
 /* PirateSlotsGame.css - Animations & ambiance Qfluch + FX visuels */
 
 body, .pirate-bg {
-  background: radial-gradient(ellipse at center, #232a33 0%, #0a0a1a 100%);
+  background: url("/src/images/fond.png") center center/cover no-repeat fixed;
   min-height: 100vh;
   position: relative;
   overflow: hidden;
@@ -11,14 +11,9 @@ body, .pirate-bg {
   position: absolute;
   top: 0; left: 0; width: 100vw; height: 100vh;
   pointer-events: none;
-  background: url('https://i.imgur.com/1Q9ZQ9Q.png') repeat;
+  background: none;
   opacity: 0.18;
-  animation: brumeMove 18s linear infinite;
   z-index: 0;
-}
-@keyframes brumeMove {
-  0% { background-position: 0 0; }
-  100% { background-position: 400px 200px; }
 }
 
 .bat-animation {
@@ -26,7 +21,7 @@ body, .pirate-bg {
   left: -120px;
   top: 60px;
   width: 80px; height: 40px;
-  background: url('https://i.imgur.com/2Q9ZQ9Q.png') center/contain no-repeat;
+  background: url('/src/images/chauve.png') center/contain no-repeat;
   animation: batFly 1.2s cubic-bezier(.7,.2,.3,1) forwards;
   z-index: 10;
 }

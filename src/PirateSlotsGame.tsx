@@ -1,16 +1,26 @@
 import React, { useMemo, useState } from "react";
-import { spinPirateSlots, PirateSymbolId } from "./pirateSlots";
+import { spinPirateSlots, PirateSymbolId, pickWeightedPirate } from "./pirateSlots";
 import { useSound } from "./audio/useSound";
 import "./PirateSlotsGame.css";
 
-const emoji: Record<PirateSymbolId, string> = {
+import elephantImg from "./images/elephant.png";
+import soldatImg from "./images/soldat.png";
+import chauveImg from "./images/chauve.png";
+import perroImg from "./images/perro.png";
+import gunImg from "./images/gun.png";
+import coffreImg from "./images/coffre.png";
+import boobaVideo from "./vidéos/booba.mp4";
+
+const symbolImages: Partial<Record<PirateSymbolId | "ELEPHANT" | "SOLDAT", React.ReactNode>> = {
   PIRATE: "🏴‍☠️",
-  CHEST: "🧰",
+  CHEST: <img src={coffreImg} alt="coffre" style={{height: 40}} />,
   COIN: "🪙",
-  BAT: "🦇",
-  BLUNDERBUSS: "🔫",
+  BAT: <img src={chauveImg} alt="chauve-souris" style={{height: 40}} />,
+  BLUNDERBUSS: <img src={gunImg} alt="pistolet" style={{height: 40}} />,
   MAP: "🗺️",
-  PARROT: "🦜"
+  PARROT: <img src={perroImg} alt="perroquet" style={{height: 40}} />,
+  ELEPHANT: <img src={elephantImg} alt="éléphant" style={{height: 40}} />,
+  SOLDAT: <img src={soldatImg} alt="soldat" style={{height: 40}} />
 };
 
 function BatAnimation() { return <div className="bat-animation" />; }
@@ -24,18 +34,36 @@ function FxOverlay({ fx }: { fx: Fx }) {
 
 type Fx = "NONE" | "WIN" | "BIGWIN" | "JACKPOT" | "SPIN";
 
+// Nouvelle fonction pour générer une grille 5x5 de symboles
+function spinGrid(): PirateSymbolId[][] {
+  return Array.from({ length: 5 }, () =>
+    Array.from({ length: 5 }, () => pickWeightedPirate())
+  );
+}
+
+// Détection de 5 éléphants alignés (ligne, colonne, diagonale)
+function hasFiveElephants(grid: PirateSymbolId[][]): boolean {
+  // Lignes
+  for (let i = 0; i < 5; i++) {
+    if (grid[i].every(s => s === "ELEPHANT")) return true;
+  }
+  // Colonnes
+  for (let j = 0; j < 5; j++) {
+    if ([0,1,2,3,4].every(i => grid[i][j] === "ELEPHANT")) return true;
+  }
+  // Diagonale principale
+  if ([0,1,2,3,4].every(i => grid[i][i] === "ELEPHANT")) return true;
+  // Diagonale secondaire
+  if ([0,1,2,3,4].every(i => grid[i][4-i] === "ELEPHANT")) return true;
+  return false;
+}
+
 export default function PirateSlotsGame() {
   const sfx = useSound();
 
   const [credits, setCredits] = useState<number>(1000);
   const [bet, setBet] = useState<number>(20);
-  const [reels, setReels] = useState<[
-    PirateSymbolId,
-    PirateSymbolId,
-    PirateSymbolId,
-    PirateSymbolId,
-    PirateSymbolId
-  ]>(["COIN", "BAT", "CHEST", "MAP", "PARROT"]);
+  const [reels, setReels] = useState<PirateSymbolId[][]>(spinGrid());
   const [lastPayout, setLastPayout] = useState<number>(0);
   const [log, setLog] = useState<any[]>([]);
   const [showBat, setShowBat] = useState(false);
@@ -43,6 +71,7 @@ export default function PirateSlotsGame() {
   const [showShot, setShowShot] = useState(false);
   const [spinAnim, setSpinAnim] = useState(false);
   const [fx, setFx] = useState<Fx>("NONE");
+  const [showBooba, setShowBooba] = useState(false);
 
   const canSpin = credits >= bet && bet > 0;
   const totalWon = useMemo(() => log.reduce((s, x) => s + x.payout, 0), [log]);
@@ -67,45 +96,20 @@ export default function PirateSlotsGame() {
     sfx.play("reelStop", { delayMs: 220, gain: 0.85, rate: 1.0 });
     sfx.play("reelStop", { delayMs: 360, gain: 0.85, rate: 1.05 });
     sfx.play("reelStop", { delayMs: 520, gain: 0.85, rate: 1.1 });
-    const r = spinPirateSlots(bet);
+    const grid = spinGrid();
     setTimeout(() => {
-      setReels(r.reels);
-      setLastPayout(r.payout);
-      if (r.payout > 0) setCredits((c) => c + r.payout);
+      setReels(grid);
+      // Pour la démo, on ne calcule pas de gain réel sur la grille 5x5
+      setLastPayout(0);
       setLog((prev) => [
-        { time: Date.now(), bet, reels: r.reels, payout: r.payout },
+        { time: Date.now(), bet, reels: grid, payout: 0 },
         ...prev
       ].slice(0, 30));
-      const hasBlunder = r.reels.includes("BLUNDERBUSS");
-      const hasBat = r.reels.includes("BAT");
-      const hasChest = r.reels.includes("CHEST");
       setShowBat(true);
       setTimeout(() => setShowBat(false), 1200);
-      if (hasBat) {
-        setShowBat(true);
-        sfx.play("bat", { gain: 0.7 });
-      }
-      if (hasBlunder) {
-        setShowShot(true);
-        sfx.play("blunderbuss", { gain: 1.0 });
-        setTimeout(() => setShowShot(false), 800);
-      }
-      if (r.payout > 0) {
-        setShowCoinDrop(true);
-        sfx.play("coins", { gain: 1.0 });
-        setTimeout(() => setShowCoinDrop(false), 1200);
-        if (r.payout >= bet * 20 || (hasChest && r.payout >= bet * 12)) {
-          sfx.play("jackpot", { gain: 1.0 });
-          triggerFx("JACKPOT", 1600);
-        } else if (r.payout >= bet * 10) {
-          sfx.play("bigwin", { gain: 0.95 });
-          triggerFx("BIGWIN", 1200);
-        } else {
-          sfx.play("win", { gain: 0.8 });
-          triggerFx("WIN", 800);
-        }
-      }
       setSpinAnim(false);
+      // Déclenche la vidéo si 5 éléphants alignés
+      if (hasFiveElephants(grid)) setShowBooba(true);
     }, 600);
   }
 
@@ -183,21 +187,24 @@ export default function PirateSlotsGame() {
         </div>
         <div
           style={{
-            display: "flex",
-            gap: 18,
+            display: "grid",
+            gridTemplateColumns: "repeat(5, 1fr)",
+            gap: 8,
             padding: 18,
             borderRadius: 14,
             border: "2px solid #ff9800",
             background: "#222",
-            fontSize: 64,
+            fontSize: 48,
             boxShadow: "0 2px 16px #000"
           }}
         >
-          {reels.map((s, i) => (
-            <span key={i} className={spinAnim ? "card-anim spin" : "card-anim"}>
-              {emoji[s]}
-            </span>
-          ))}
+          {reels.map((row, rowIdx) =>
+            row.map((s, colIdx) => (
+              <span key={rowIdx + "-" + colIdx} className={spinAnim ? "card-anim spin" : "card-anim"}>
+                {symbolImages[s] || s}
+              </span>
+            ))
+          }
         </div>
       </div>
       <h2 style={{ marginTop: 28 }}>Historique</h2>
@@ -215,10 +222,12 @@ export default function PirateSlotsGame() {
           >
             <span style={{ width: 86, opacity: 0.7 }}>{new Date(x.time).toLocaleTimeString()}</span>
             <span style={{ width: 80 }}>Mise {x.bet}</span>
-            <span style={{ width: 180 }}>
-              {x.reels.map((s: PirateSymbolId, i: number) => (
-                <span key={i} className="card-anim">{emoji[s]}</span>
-              ))}
+            <span style={{ width: 220 }}>
+              <span style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 2 }}>
+                {x.reels.flat().map((s: PirateSymbolId, i: number) => (
+                  <span key={i} className="card-anim">{symbolImages[s] || s}</span>
+                ))}
+              </span>
             </span>
             <span style={{ width: 90 }}><b>+{x.payout}</b></span>
           </div>
@@ -229,6 +238,16 @@ export default function PirateSlotsGame() {
       {showBat && <BatAnimation />}
       {showCoinDrop && <CoinDropAnimation />}
       {showShot && <BlunderbussShotAnimation />}
+      {/* Overlay vidéo Booba */}
+      {showBooba && (
+        <div style={{
+          position: "fixed", left: 0, top: 0, width: "100vw", height: "100vh", background: "rgba(0,0,0,0.85)", zIndex: 9999,
+          display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column"
+        }}>
+          <video src={boobaVideo} autoPlay controls style={{ maxWidth: "90vw", maxHeight: "80vh", borderRadius: 16, boxShadow: "0 4px 32px #000" }} />
+          <button onClick={() => setShowBooba(false)} style={{ marginTop: 24, fontSize: 22, padding: "12px 32px", borderRadius: 8, background: "#ff9800", color: "#222", border: "none", cursor: "pointer" }}>Fermer</button>
+        </div>
+      )}
     </div>
   );
 }
