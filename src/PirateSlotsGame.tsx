@@ -225,9 +225,11 @@ export default function PirateSlotsGame() {
             <LanternGlow />
             <FxOverlay fx={fx} />
 
-            <h1 style={{ fontSize: 38, textShadow: "2px 2px 8px #000", display: 'flex', alignItems: 'center', gap: 16, justifyContent: 'center' }}>
-                <img src={drapImg} alt="drapeau pirate" style={{ height: 48, verticalAlign: 'middle' }} />
-                Funesterie
+            <h1 style={{ fontSize: 54, textShadow: "2px 2px 12px #000", display: 'flex', alignItems: 'center', gap: 32, justifyContent: 'center', margin: '32px 0 24px 0' }}>
+                <img src={drapImg} alt="drapeau pirate" style={{ height: 90, verticalAlign: 'middle', marginRight: 18 }} />
+                <span style={{ fontWeight: 900, letterSpacing: 2, color: '#ffe082', textShadow: '2px 2px 12px #000' }}>
+                  Funesterie
+                </span>
             </h1>
 
             <div style={{ display: "flex", gap: 16, alignItems: "center", marginTop: 8 }}>
@@ -251,32 +253,30 @@ export default function PirateSlotsGame() {
                 {!sfx.ready && <span style={{ opacity: 0.7 }}>(Clique une fois pour activer le son)</span>}
             </div>
 
-            <div style={{ display: "flex", gap: 24, alignItems: "center", marginTop: 16 }}>
+            <div style={{ display: "flex", gap: 24, alignItems: "center", marginTop: 0, marginBottom: 0 }}>
                 {/* Grille 5x5 */}
                 <div className="slot-grid-max" style={{ height: '70vh', maxHeight: '80vh' }}>
-                    {reels.flatMap((row, rowIdx) =>
-    row.map((sym, colIdx) => (
-        <span
-            key={`${rowIdx}-${colIdx}`}
-            className={spinAnim ? "card-anim spin" : "card-anim"}
-            style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                minHeight: 56,
-                width: "100%",
-                height: "100%"
-            }}
-        >
-            {React.cloneElement(symbolImages[sym] as React.ReactElement, { style: { height: '8vw', maxHeight: 120, width: 'auto', maxWidth: '90%' } })}
-        </span>
-    ))
-)}
+                    {[].concat.apply([], reels).map((sym, idx) => (
+                        <span
+                            key={idx}
+                            className={spinAnim ? "card-anim spin" : "card-anim"}
+                            style={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                minHeight: 56,
+                                width: "100%",
+                                height: "100%"
+                            }}
+                        >
+                            {React.cloneElement(symbolImages[sym] as React.ReactElement, { style: { height: '8vw', maxHeight: 120, width: 'auto', maxWidth: '90%' } })}
+                        </span>
+                    ))}
                 </div>
             </div>
 
             {/* Bouton SPIN centré et visible */}
-            <div style={{ display: 'flex', justifyContent: 'center', margin: '32px 0 0 0', width: '100%' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', margin: '8px 0 0 0', width: '100%' }}>
                 <button
                     onClick={spin}
                     disabled={!canSpin}
