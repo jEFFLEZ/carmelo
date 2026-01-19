@@ -3,9 +3,9 @@ import marineImg from "./images/marine.png";
 import saphirImg from "./images/saphir.png";
 import rubisImg from "./images/rubis.png";
 import opaleImg from "./images/opale.png";
-import saphirSound from "./audio/saphir.m4a";
-import rubisSound from "./audio/rubis.m4a";
-import opaleSound from "./audio/opale.m4a";
+import saphirSound from "./audio/saphir.mp3";
+import rubisSound from "./audio/rubis.mp3";
+import opaleSound from "./audio/opale.mp3";
 import drapImg from "./images/drap.png";
 
 const diamonds = [
@@ -78,7 +78,15 @@ export default function MiniTreasureGame({
         <h2 style={{ margin: 0 }}>Chasse au Trésor</h2>
       </div>
       <p>Tirs restants : {shotsLeft}</p>
-      <div className="boatGrid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24, width: 480, margin: '0 auto' }}>
+      <div className="boatGrid" style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(3, 1fr)', 
+        gap: 'clamp(12px, 3vw, 24px)',
+        width: 'clamp(280px, 90vw, 450px)',
+        maxWidth: '100%',
+        margin: '0 auto',
+        padding: 'clamp(8px, 2vw, 16px)'
+      }}>
         {boats.map((b) => (
           <button
             key={b.id}
@@ -86,9 +94,10 @@ export default function MiniTreasureGame({
             onClick={() => shootBoat(b.id)}
             disabled={b.sunk || finished}
             style={{
-              padding: 0,
-              background: 'none',
-              border: 'none',
+              padding: '0',
+              background: 'rgba(30, 30, 40, 0.8)',
+              border: '2px solid rgba(255, 224, 130, 0.3)',
+              borderRadius: '12px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -97,41 +106,101 @@ export default function MiniTreasureGame({
               minWidth: 0,
               minHeight: 0,
               maxWidth: '100%',
-              maxHeight: '100%'
+              maxHeight: '100%',
+              cursor: (b.sunk || finished) ? 'not-allowed' : 'pointer',
+              opacity: (b.sunk || finished) ? 0.5 : 1,
+              transition: 'all 0.2s ease',
+              overflow: 'hidden',
+            }}
+            onMouseDown={(e) => {
+              if (!b.sunk && !finished) {
+                (e.currentTarget as HTMLButtonElement).style.transform = 'scale(0.95)';
+                (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 16px rgba(255, 224, 130, 0.6)';
+              }
+            }}
+            onMouseUp={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)';
+              (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 8px rgba(255, 224, 130, 0.3)';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)';
+              (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 8px rgba(255, 224, 130, 0.3)';
+            }}
+            onMouseEnter={(e) => {
+              if (!b.sunk && !finished) {
+                (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 12px rgba(255, 224, 130, 0.5)';
+              }
             }}
           >
-            {!b.sunk ? (
-              <img
-                src={marineImg}
-                alt="bateau"
-                style={{ width: '90%', height: '90%', objectFit: 'contain', display: 'block' }}
-              />
-            ) : b.diamond ? (
-              <img
-                src={b.diamond.img}
-                alt={b.diamond.alt}
-                style={{ width: '90%', height: '90%', objectFit: 'contain', display: 'block' }}
-              />
-            ) : (
-              <span style={{ fontSize: 48 }}>💥🌊</span>
-            )}
+            <div style={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 'clamp(4px, 1.5vw, 8px)'
+            }}>
+              {!b.sunk ? (
+                <img
+                  src={marineImg}
+                  alt="bateau"
+                  style={{ 
+                    width: '100%', 
+                    height: '100%', 
+                    objectFit: 'contain',
+                    maxWidth: '100%',
+                    maxHeight: '100%'
+                  }}
+                />
+              ) : b.diamond ? (
+                <img
+                  src={b.diamond.img}
+                  alt={b.diamond.alt}
+                  style={{ 
+                    width: '100%', 
+                    height: '100%', 
+                    objectFit: 'contain',
+                    maxWidth: '100%',
+                    maxHeight: '100%'
+                  }}
+                />
+              ) : (
+                <span style={{ fontSize: 'clamp(28px, 5vw, 42px)', lineHeight: 1 }}>💥</span>
+              )}
+            </div>
           </button>
         ))}
       </div>
       {showResult && (
         <div
           style={{
-            marginTop: 18,
-            fontSize: 22,
+            marginTop: 'clamp(12px, 3vw, 24px)',
+            fontSize: 'clamp(16px, 4vw, 24px)',
             color: "#ffe082",
+            textAlign: 'center',
+            fontWeight: 700
           }}
         >
-          Gain total : {totalWin} crédits<br />
+          Gain total : {totalWin} crédits
         </div>
       )}
       <button
         onClick={handleClose}
-        style={{ marginTop: 16, opacity: showResult ? 1 : 0.5, pointerEvents: showResult ? 'auto' : 'none' }}
+        style={{ 
+          marginTop: 'clamp(12px, 3vw, 20px)', 
+          opacity: showResult ? 1 : 0.5, 
+          pointerEvents: showResult ? 'auto' : 'none',
+          padding: 'clamp(10px, 2vw, 14px) clamp(20px, 4vw, 28px)',
+          fontSize: 'clamp(14px, 3.5vw, 18px)',
+          borderRadius: '8px',
+          background: '#ff9800',
+          color: '#222',
+          border: 'none',
+          cursor: showResult ? 'pointer' : 'not-allowed',
+          fontWeight: 700,
+          transition: 'all 0.2s ease',
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.5)'
+        }}
       >
         Quitter
       </button>

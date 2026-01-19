@@ -25,6 +25,7 @@ import batSound from "./audio/bat.mp3";
 import pirateMusic from "./audio/piratesong.mp3";
 import spartaVideo from "./videos/sparta.mp4";
 import jackMusic from "./audio/jack.mp3";
+import alerteSound from "./audio/alerte.mp3";
 
 type ExtraSymbolId = "ELEPHANT" | "SOLDAT";
 type SlotSymbolId = PirateSymbolId | ExtraSymbolId;
@@ -327,10 +328,6 @@ export default function PirateSlotsGame() {
         if (!sfx.ready) await sfx.unlock();
     }
 
-    function hasThreeFlags(grid: SlotSymbolId[][]) {
-        return grid.flat().filter(s => s === "PIRATE").length === 3;
-    }
-
     // Nouvelle fonction de spin colonne par colonne avec animation
     async function spin() {
         if (isSpinning) {
@@ -399,20 +396,6 @@ export default function PirateSlotsGame() {
         }
     }
 
-    function hasPirateInEachColumn(grid: SlotSymbolId[][]): boolean {
-        for (let col = 0; col < 5; col++) {
-            let found = false;
-            for (let row = 0; row < 5; row++) {
-                if (grid[row][col] === "PIRATE") {
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) return false;
-        }
-        return true;
-    }
-
     function finalizeSpin(grid?: SlotSymbolId[][]) {
         const finalGrid = grid || reels;
         let payout = 0;
@@ -424,19 +407,31 @@ export default function PirateSlotsGame() {
             payout = bet * 50;
             triggerFx("JACKPOT", 1400);
             winCombos = getWinningCombos(finalGrid).filter(combo => combo.every(idx => finalGrid[Math.floor(idx/5)][idx%5] === "ELEPHANT")).flat();
+            // Son d'alerte pour booba
+            const alert = new Audio(alerteSound);
+            alert.play();
         } else if (jackpotSoldat) {
             payout = bet * 40;
             triggerFx("BIGWIN", 1200);
             winCombos = getWinningCombos(finalGrid).filter(combo => combo.every(idx => finalGrid[Math.floor(idx/5)][idx%5] === "SOLDAT")).flat();
+            // Son d'alerte pour sparta
+            const alert = new Audio(alerteSound);
+            alert.play();
         } else {
             const flat = finalGrid.flat();
             const coinCount = flat.filter((s) => s === "COIN").length;
             if (coinCount >= 7) {
                 payout = bet * 5;
                 winCombos = getWinningCombos(finalGrid).filter(combo => combo.every(idx => flat[idx] === "COIN")).flat();
+                // Son d'alerte pour bigwin
+                const alert = new Audio(alerteSound);
+                alert.play();
             } else if (coinCount >= 5) {
                 payout = bet * 2;
                 winCombos = getWinningCombos(finalGrid).filter(combo => combo.every(idx => flat[idx] === "COIN")).flat();
+                // Son d'alerte pour win
+                const alert = new Audio(alerteSound);
+                alert.play();
             }
             if (payout >= bet * 5) triggerFx("BIGWIN", 1000);
             else if (payout > 0) triggerFx("WIN", 800);
@@ -469,21 +464,31 @@ export default function PirateSlotsGame() {
         if (hasFiveBats(finalGrid)) {
             const audio = new Audio(batSound);
             audio.play();
+            // Son d'alerte pour bat
+            const alert = new Audio(alerteSound);
+            alert.play();
         }
         if (hasFiveElephants(finalGrid)) {
             setShowBooba(true);
+            // Son d'alerte pour booba
+            const alert = new Audio(alerteSound);
+            alert.play();
         }
         if (hasFiveSoldats(finalGrid)) {
             setShowSparta(true);
+            // Son d'alerte pour sparta
+            const alert = new Audio(alerteSound);
+            alert.play();
         }
-        // Déclencheur mini-jeu pirate (seulement si 3 PIRATE)
-        if (flat.filter(s => s === "PIRATE").length === 3) {
+        // Déclencheur mini-jeu pirate (marine/pierres précieuses) : dès qu'il y a 3 PIRATE n'importe où
+        if (flat.filter(s => s === "PIRATE").length >= 3) {
             setShowMiniGame(true);
             const audio = new Audio(rireMp3);
             audio.play();
         }
-        // Déclencheur mini-jeu carte (MAP x3 seulement)
-        if (flat.filter(s => s === "MAP").length === 3) {
+        // Déclencheur mini-jeu carte (MAP x5 alignés seulement)
+        const mapWinCombo = getWinningCombos(finalGrid).find(combo => combo.every(idx => flat[idx] === "MAP"));
+        if (mapWinCombo) {
             handleCarteMiniGameOpen();
             setShowCarteMiniGame(true);
         }
@@ -532,7 +537,7 @@ export default function PirateSlotsGame() {
                 if (!sfx.ready) sfx.unlock();
             }}
             style={{
-                padding: 24,
+                padding: 0,
                 fontFamily: "system-ui",
                 background: "#0a0a1a",
                 color: "#ffe082",
@@ -573,114 +578,59 @@ export default function PirateSlotsGame() {
             <LanternGlow />
             <FxOverlay fx={fx} />
 
-            <h1 style={{ fontSize: 'clamp(32px, 8vw, 54px)', textShadow: "2px 2px 12px #000", display: 'flex', alignItems: 'center', gap: 32, justifyContent: 'center', margin: '6vw 0 4vw 0' }}>
-                <img src={drapImg} alt="drapeau pirate" style={{ height: 90, verticalAlign: 'middle', marginRight: 18 }} />
-                <span style={{ fontWeight: 900, letterSpacing: 2, color: '#ffe082', textShadow: '2px 2px 12px #000' }}>
-                  Funesterie
-                </span>
-            </h1>
-
-            {/* Barre volume/muet supprimée */}
-            {/* <div style={{ display: "flex", gap: 16, alignItems: "center", marginTop: 8 }}>
-                <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    <input type="checkbox" checked={sfx.muted} onChange={(e) => sfx.setMuted(e.target.checked)} />
-                    Muet
-                </label>
-
-                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    <span style={{ opacity: 0.8 }}>Volume</span>
-                    <input
-                        type="range"
-                        min={0}
-                        max={1}
-                        step={0.01}
-                        value={sfx.volume}
-                        onChange={(e) => sfx.setVolume(Number(e.target.value))}
-                    />
+            {/* ZONE CENTRALE */}
+            <div className="slot-center-area">
+                <h1 style={{ fontSize: 'clamp(32px, 8vw, 54px)', textShadow: "2px 2px 12px #000", display: 'flex', alignItems: 'center', gap: 32, justifyContent: 'center', margin: '2vw 0 2vw 0' }}>
+                    <img src={drapImg} alt="drapeau pirate" style={{ height: 90, verticalAlign: 'middle', marginRight: 18 }} />
+                    <span style={{ fontWeight: 900, letterSpacing: 2, color: '#ffe082', textShadow: '2px 2px 12px #000' }}>
+                      Funesterie
+                    </span>
+                </h1>
+                <div className="slot-grid-max">
+                    {reels.flat().map((sym, idx) => {
+                        const isWin = highlightWins.includes(idx);
+                        const symbolElement = symbolImages[sym];
+                        return (
+                            <span
+                                key={idx}
+                                className={
+                                    (spinAnim ? "card-anim spin rotate" : "card-anim") +
+                                    (highlightPirates.includes(idx) ? " pirate-highlight-multi" : "")
+                                }
+                                style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    minHeight: 56,
+                                    width: "100%",
+                                    height: "100%",
+                                    boxShadow: isWin ? (sym === "MAP"
+                                        ? "0 0 24px 8px #00eaff, 0 0 0 4px #ff00ea, 0 0 32px 12px #ffe082"
+                                        : `0 0 24px 8px ${getWinColor(sym)}, 0 0 0 4px ${getWinColor(sym)}`) : "none",
+                                    background: isWin ? (sym === "MAP"
+                                        ? "linear-gradient(135deg, #ffe082 0%, #00eaff 50%, #ff00ea 100%)"
+                                        : getWinColor(sym) + "22") : "transparent",
+                                    borderRadius: isWin ? 12 : 0,
+                                    border: isWin ? (sym === "MAP"
+                                        ? "2px solid #00eaff"
+                                        : `2px solid ${getWinColor(sym)}`) : "none",
+                                    transition: "box-shadow 0.2s, background 0.2s, border 0.2s"
+                                }}
+                            >
+                                {symbolElement
+                                    ? React.cloneElement(symbolElement, { style: { height: '8vw', maxHeight: 120, width: 'auto', maxWidth: '90%', objectFit: 'contain' } })
+                                    : <span style={{ color: 'red', fontWeight: 700 }}>?</span>
+                                }
+                            </span>
+                        );
+                    })}
+                    {/* Overlay SVG pour relier les cases gagnantes, seulement si gain */}
+                    {highlightWins.length >= 2 && <WinLineOverlay winIndexes={highlightWins} />}
                 </div>
-
-                {!sfx.ready && <span style={{ opacity: 0.7 }}>(Clique une fois pour activer le son)</span>}
-            </div> */}
-
-            <div style={{ display: "flex", gap: 24, alignItems: "center", marginTop: 0, marginBottom: 0 }}>
-                {/* Grille 5x5 */}
-                <div style={{
-                  position: "relative",
-                  width: '98vw', // mobile-friendly width
-                  height: '100%',
-                  maxWidth: 520,
-                  margin: '0 auto',
-                  minHeight: '180px',
-                  boxSizing: 'border-box'
-                }}>
-                  <div className="slot-grid-max" style={{ height: '50vh', maxHeight: '60vh', minHeight: 180 }}>
-                      {reels.flat().map((sym, idx) => {
-                          const isWin = highlightWins.includes(idx);
-                          const symbolElement = symbolImages[sym];
-                          return (
-                              <span
-                                  key={idx}
-                                  className={
-                                      (spinAnim ? "card-anim spin rotate" : "card-anim") +
-                                      (highlightPirates.includes(idx) ? " pirate-highlight-multi" : "")
-                                  }
-                                  style={{
-                                      display: "flex",
-                                      alignItems: "center",
-                                      justifyContent: "center",
-                                      minHeight: 56,
-                                      width: "100%",
-                                      height: "100%",
-                                      boxShadow: isWin ? (sym === "MAP"
-                                          ? "0 0 24px 8px #00eaff, 0 0 0 4px #ff00ea, 0 0 32px 12px #ffe082"
-                                          : `0 0 24px 8px ${getWinColor(sym)}, 0 0 0 4px ${getWinColor(sym)}`) : "none",
-                                      background: isWin ? (sym === "MAP"
-                                          ? "linear-gradient(135deg, #ffe082 0%, #00eaff 50%, #ff00ea 100%)"
-                                          : getWinColor(sym) + "22") : "transparent",
-                                      borderRadius: isWin ? 12 : 0,
-                                      border: isWin ? (sym === "MAP"
-                                          ? "2px solid #00eaff"
-                                          : `2px solid ${getWinColor(sym)}`) : "none",
-                                      transition: "box-shadow 0.2s, background 0.2s, border 0.2s"
-                                  }}
-                              >
-                                  {symbolElement
-                                      ? React.cloneElement(symbolElement, { style: { height: '8vw', maxHeight: 120, width: 'auto', maxWidth: '90%', objectFit: 'contain' } })
-                                      : <span style={{ color: 'red', fontWeight: 700 }}>?</span>
-                                  }
-                              </span>
-                          );
-                      })}
-                  </div>
-                  {/* Overlay SVG pour relier les cases gagnantes, seulement si gain */}
-                  {highlightWins.length >= 2 && <WinLineOverlay winIndexes={highlightWins} />}
-                </div>
-            </div>
-
-            {/* Bouton SPIN/STOP */}
-            <div style={{ display: 'flex', justifyContent: 'center', margin: '16px 0 0 0', width: '100%' }}>
                 <button
+                    className="spin-btn"
                     onClick={spin}
                     disabled={!canSpin && !isSpinning}
-                    style={{
-                        padding: '3vw 8vw',
-                        fontSize: 'clamp(22px, 5vw, 32px)',
-                        fontWeight: 700,
-                        cursor: (canSpin || isSpinning) ? 'pointer' : 'not-allowed',
-                        background: '#ff9800',
-                        color: '#222',
-                        borderRadius: '3vw',
-                        border: 'none',
-                        boxShadow: '0 2px 16px #000',
-                        margin: '0 auto',
-                        transition: 'background 0.2s',
-                        opacity: (canSpin || isSpinning) ? 1 : 0.5,
-                        outline: 'none',
-                        position: 'relative',
-                        zIndex: 2,
-                        minWidth: 120,
-                        minHeight: 48,
-                    }}
                 >
                     {isSpinning ? 'STOP' : 'SPIN'}
                 </button>
@@ -734,11 +684,17 @@ export default function PirateSlotsGame() {
                             <span style={{ width: 80, opacity: 0.85 }}>Mise {x.bet}</span>
                             <span style={{ width: 220 }}>
                                 <span style={{ display: "flex", gap: 6 }}>
-                                    {x.reels.flat().map((sym, i) => (
-                                        <span key={i} className="card-anim" style={{ display: "flex", justifyContent: "center", alignItems: "center", background: "#222", borderRadius: 6, boxShadow: "0 0 8px #ffe082", padding: 2 }}>
-                                            {React.cloneElement(symbolImages[sym], { style: { height: 38, width: 'auto', maxWidth: 44, objectFit: 'contain', display: 'block' } })}
-                                        </span>
-                                    ))}
+                                    {x.reels.flat().map((sym, i) => {
+                    const symbolElement = symbolImages[sym];
+                    return (
+                        <span key={i} className="card-anim" style={{ display: "flex", justifyContent: "center", alignItems: "center", background: "#222", borderRadius: 6, boxShadow: "0 0 8px #ffe082", padding: 2 }}>
+                            {symbolElement
+                                ? React.cloneElement(symbolElement, { style: { height: 38, width: 'auto', maxWidth: 44, objectFit: 'contain', display: 'block' } })
+                                : <span style={{ color: 'red', fontWeight: 700 }}>?</span>
+                            }
+                        </span>
+                    );
+                })}
                                 </span>
                             </span>
                             <span style={{ width: 90, fontWeight: 700, color: '#fffbe6' }}>+{x.payout}</span>
