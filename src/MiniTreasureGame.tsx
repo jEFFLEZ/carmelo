@@ -78,29 +78,42 @@ export default function MiniTreasureGame({
         <h2 style={{ margin: 0 }}>Chasse au Trésor</h2>
       </div>
       <p>Tirs restants : {shotsLeft}</p>
-      <div className="boatGrid">
+      <div className="boatGrid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24, width: 480, margin: '0 auto' }}>
         {boats.map((b) => (
           <button
             key={b.id}
             className={`boat ${b.sunk ? "sunk" : ""}`}
             onClick={() => shootBoat(b.id)}
             disabled={b.sunk || finished}
-            style={{ padding: 0, background: 'none', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            style={{
+              padding: 0,
+              background: 'none',
+              border: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '100%',
+              aspectRatio: '1/1',
+              minWidth: 0,
+              minHeight: 0,
+              maxWidth: '100%',
+              maxHeight: '100%'
+            }}
           >
             {!b.sunk ? (
               <img
                 src={marineImg}
                 alt="bateau"
-                style={{ width: 60, height: 60, objectFit: 'contain', display: 'block' }}
+                style={{ width: '90%', height: '90%', objectFit: 'contain', display: 'block' }}
               />
             ) : b.diamond ? (
               <img
                 src={b.diamond.img}
                 alt={b.diamond.alt}
-                style={{ width: 44, height: 44, objectFit: 'contain', display: 'block' }}
+                style={{ width: '90%', height: '90%', objectFit: 'contain', display: 'block' }}
               />
             ) : (
-              <span style={{ fontSize: 32 }}>💥🌊</span>
+              <span style={{ fontSize: 48 }}>💥🌊</span>
             )}
           </button>
         ))}
