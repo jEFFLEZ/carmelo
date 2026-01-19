@@ -35,7 +35,7 @@ export default function App() {
             textShadow: "2px 2px 8px #000",
           }}
         >
-          Pirate Slots
+          Treasor Cruse
         </h1>
         <button
           style={{
