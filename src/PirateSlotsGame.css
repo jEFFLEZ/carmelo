@@ -3,7 +3,6 @@
 body, .pirate-bg {
   background: url("/src/images/fond.png") center center/cover no-repeat fixed;
   min-height: 100vh;
-  position: relative;
   overflow: hidden;
 }
 
