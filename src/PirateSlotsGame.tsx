@@ -460,8 +460,10 @@ export default function PirateSlotsGame() {
             const audio = new Audio(rireMp3);
             audio.play();
         }
-        // Déclencheur mini-jeu carte (toujours)
-        setShowCarteMiniGame(true);
+        // Déclencheur mini-jeu carte (MAP x3 seulement)
+        if (flat.filter(s => s === "MAP").length === 3) {
+            setShowCarteMiniGame(true);
+        }
         setLog((prev) => [{ time: Date.now(), bet, reels: finalGrid, payout }, ...prev].slice(0, 30));
     }
 
@@ -609,7 +611,7 @@ export default function PirateSlotsGame() {
                 <button
                     onClick={spin}
                     disabled={!canSpin && !isSpinning}
-                    style={{
+                    style({
                         padding: '18px 48px',
                         fontSize: 32,
                         fontWeight: 700,
@@ -625,7 +627,7 @@ export default function PirateSlotsGame() {
                         outline: 'none',
                         position: 'relative',
                         zIndex: 2
-                    }}
+                    })
                 >
                     {isSpinning ? 'STOP' : 'SPIN'}
                 </button>

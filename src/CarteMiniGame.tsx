@@ -2,11 +2,11 @@ import React, { useState } from "react";
 import carteImg from "./images/carte.png";
 
 export default function CarteMiniGame({ onClose, onWin, lingotImg }: { onClose: () => void; onWin: (reward: number) => void; lingotImg: string }) {
-  // Coordonnées des 3 croix (en pourcentage de l'image)
+  // Coordonnées précises des 3 croix (ajustées pour coller aux croix sur l'image)
   const crossZones = [
-    { left: "22%", top: "38%" },
-    { left: "53%", top: "60%" },
-    { left: "75%", top: "28%" }
+    { left: "23.5%", top: "39.5%" },
+    { left: "53.5%", top: "62%" },
+    { left: "76.5%", top: "29.5%" }
   ];
   const [goldIndex, setGoldIndex] = useState(() => Math.floor(Math.random() * crossZones.length));
   const [selected, setSelected] = useState<number | null>(null);
@@ -23,13 +23,6 @@ export default function CarteMiniGame({ onClose, onWin, lingotImg }: { onClose: 
     } else {
       setMessage("Raté ! Pas de lingot ici...");
     }
-  }
-
-  function handleReplay() {
-    setGoldIndex(Math.floor(Math.random() * crossZones.length));
-    setSelected(null);
-    setRevealed(false);
-    setMessage("");
   }
 
   return (
@@ -52,19 +45,27 @@ export default function CarteMiniGame({ onClose, onWin, lingotImg }: { onClose: 
               position: "absolute",
               left: pos.left,
               top: pos.top,
-              width: 44, height: 44,
-              background: "transparent",
-              border: revealed && idx === goldIndex ? "2px solid gold" : "2px solid #c00",
+              width: 48, height: 48,
+              background: "rgba(0,0,0,0.05)",
+              border: revealed && idx === goldIndex ? "3px solid gold" : "3px solid #c00",
               borderRadius: "50%",
               cursor: revealed ? "default" : "pointer",
               transform: "translate(-50%, -50%)",
               zIndex: 2,
               outline: idx === selected ? "2px solid #ffe082" : "none",
-              boxShadow: revealed && idx === goldIndex ? "0 0 16px 4px gold" : "0 0 8px 2px #c00"
+              boxShadow: revealed && idx === goldIndex ? "0 0 16px 4px gold" : "0 0 8px 2px #c00",
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              padding: 0
             }}
           >
-            {/* Affiche le lingot si gagné */}
-            {revealed && idx === goldIndex ? <img src={lingotImg} alt="Lingot d'or" style={{ width: 32, height: 32, objectFit: 'contain' }} /> : null}
+            {/* Affiche le lingot triplé si gagné */}
+            {revealed && idx === goldIndex ? (
+              <span style={{ display: 'flex', gap: 2 }}>
+                <img src={lingotImg} alt="Lingot d'or" style={{ width: 22, height: 22, objectFit: 'contain' }} />
+                <img src={lingotImg} alt="Lingot d'or" style={{ width: 22, height: 22, objectFit: 'contain' }} />
+                <img src={lingotImg} alt="Lingot d'or" style={{ width: 22, height: 22, objectFit: 'contain' }} />
+              </span>
+            ) : null}
           </button>
         ))}
         {/* Message résultat */}
@@ -73,10 +74,9 @@ export default function CarteMiniGame({ onClose, onWin, lingotImg }: { onClose: 
             position: "absolute", left: 0, bottom: 12, width: "100%", textAlign: "center", color: "#ffe082", fontSize: 24, fontWeight: 700, textShadow: "1px 1px 8px #000"
           }}>{message}</div>
         )}
-        {/* Boutons */}
+        {/* Bouton fermer uniquement */}
         <div style={{ position: "absolute", right: 16, top: 16, zIndex: 10, display: 'flex', gap: 8 }}>
           <button onClick={onClose} style={{ fontSize: 18, padding: "6px 16px", borderRadius: 8, border: "none", background: "#222", color: "#ffe082", cursor: "pointer" }}>Fermer</button>
-          <button onClick={handleReplay} style={{ fontSize: 18, padding: "6px 16px", borderRadius: 8, border: "none", background: "#ffe082", color: "#222", cursor: "pointer" }}>Rejouer</button>
         </div>
       </div>
     </div>
