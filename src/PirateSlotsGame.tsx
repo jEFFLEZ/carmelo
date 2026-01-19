@@ -2,6 +2,7 @@ import React, { useMemo, useState } from "react";
 import { pickWeightedPirate, PirateSymbolId } from "./pirateSlots";
 import { useSound } from "./audio/useSound";
 import "./PirateSlotsGame.css";
+import MiniTreasureGame from "./MiniTreasureGame";
 
 // Images
 import elephantImg from "./images/elephant.png";
@@ -15,6 +16,8 @@ import mapImg from "./images/map.png";
 
 // IMPORTANT: évite les accents dans les dossiers -> ./videos/booba.mp4
 import boobaVideo from "./videos/booba.mp4";
+import rireMp3 from "./audio/rire.mp3";
+import oneVideo from "./videos/one.mp4";
 
 type ExtraSymbolId = "ELEPHANT" | "SOLDAT";
 type SlotSymbolId = PirateSymbolId | ExtraSymbolId;
@@ -91,6 +94,8 @@ export default function PirateSlotsGame() {
     const [spinAnim, setSpinAnim] = useState(false);
     const [fx, setFx] = useState<Fx>("NONE");
     const [showBooba, setShowBooba] = useState(false);
+    const [showMiniGame, setShowMiniGame] = useState(false);
+    const [showIntro, setShowIntro] = useState(true);
 
     const canSpin = credits >= bet && bet > 0;
     const totalWon = useMemo(() => log.reduce((sum, x) => sum + x.payout, 0), [log]);
@@ -104,80 +109,69 @@ export default function PirateSlotsGame() {
         if (!sfx.ready) await sfx.unlock();
     }
 
+    function hasThreeFlags(grid: SlotSymbolId[][]) {
+        return grid.flat().filter(s => s === "PIRATE").length >= 3;
+    }
+
     async function spin() {
         if (!canSpin) return;
-
         await unlockAudioIfNeeded();
         sfx.play("click", { gain: 0.7 });
-
         setCredits((c) => c - bet);
         setSpinAnim(true);
         triggerFx("SPIN", 500);
-
-        // Sons
         sfx.play("spin", { gain: 0.7 });
         sfx.play("reelStop", { delayMs: 220, gain: 0.85, rate: 1.0 });
         sfx.play("reelStop", { delayMs: 360, gain: 0.85, rate: 1.05 });
         sfx.play("reelStop", { delayMs: 520, gain: 0.85, rate: 1.1 });
-
         const grid = spinGrid();
-
         window.setTimeout(() => {
             setReels(grid);
-
-            // Payout basique: juste pour que ça vive (tu peux remplacer par ton vrai calc)
             let payout = 0;
             const jackpotElephant = hasFiveElephants(grid);
-
             if (jackpotElephant) {
                 payout = bet * 50;
                 triggerFx("JACKPOT", 1400);
             } else {
-                // petit “win” random si il y a au moins 5 COIN dans la grille
                 const flat = grid.flat();
                 const coinCount = flat.filter((s) => s === "COIN").length;
                 if (coinCount >= 7) payout = bet * 5;
                 else if (coinCount >= 5) payout = bet * 2;
-
                 if (payout >= bet * 5) triggerFx("BIGWIN", 1000);
                 else if (payout > 0) triggerFx("WIN", 800);
             }
-
             setLastPayout(payout);
             if (payout > 0) {
                 setCredits((c) => c + payout);
                 setShowCoinDrop(true);
                 sfx.play("coins", { gain: 0.9 });
                 window.setTimeout(() => setShowCoinDrop(false), 1200);
-
                 if (payout >= bet * 50) sfx.play("jackpot", { gain: 1.0 });
                 else if (payout >= bet * 5) sfx.play("bigwin", { gain: 0.95 });
                 else sfx.play("win", { gain: 0.85 });
             }
-
-            // FX extra: bats + blunderbuss
             const hasBat = grid.flat().includes("BAT");
             const hasBlunder = grid.flat().includes("BLUNDERBUSS");
-
             if (hasBat) {
                 setShowBat(true);
                 sfx.play("bat", { gain: 0.85 });
                 window.setTimeout(() => setShowBat(false), 1200);
             }
-
             if (hasBlunder) {
                 setShowShot(true);
                 sfx.play("blunderbuss", { gain: 0.95 });
                 window.setTimeout(() => setShowShot(false), 800);
             }
-
             setSpinAnim(false);
-
-            // Vidéo si 5 éléphants alignés
             if (jackpotElephant) {
                 setShowBooba(true);
             }
-
+            // Déclenche le mini-jeu si 3 drapeaux
+            if (hasThreeFlags(grid)) {
+                setShowMiniGame(true);
+                const audio = new Audio(rireMp3);
+                audio.play();
+            }
             setLog((prev) => [{ time: Date.now(), bet, reels: grid, payout }, ...prev].slice(0, 30));
         }, 600);
     }
@@ -186,7 +180,7 @@ export default function PirateSlotsGame() {
         <div
             className={`gameRoot fx-${fx.toLowerCase()}`}
             onMouseDown={() => {
-                // unlock son dès la 1ère interaction
+                if (showIntro) setShowIntro(false);
                 if (!sfx.ready) sfx.unlock();
             }}
             style={{
@@ -198,6 +192,35 @@ export default function PirateSlotsGame() {
                 position: "relative"
             }}
         >
+            {showIntro && (
+                <div
+                    style={{
+                        position: "fixed",
+                        left: 0,
+                        top: 0,
+                        width: "100vw",
+                        height: "100vh",
+                        background: "#000",
+                        zIndex: 10000,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center"
+                    }}
+                    onClick={() => setShowIntro(false)}
+                >
+                    <video
+                        src={oneVideo}
+                        autoPlay
+                        controls={false}
+                        style={{ maxWidth: "100vw", maxHeight: "100vh", borderRadius: 0, background: "#000" }}
+                        onEnded={() => setShowIntro(false)}
+                    />
+                    <div style={{ position: "absolute", bottom: 32, width: "100vw", textAlign: "center", color: "#ffe082", fontSize: 22, opacity: 0.8 }}>
+                        Cliquez n'importe où pour passer l'intro
+                    </div>
+                </div>
+            )}
+
             <BrumeBg />
             <LanternGlow />
             <FxOverlay fx={fx} />
@@ -232,23 +255,23 @@ export default function PirateSlotsGame() {
                 {/* Grille 5x5 */}
                 <div className="slot-grid-max" style={{ height: '70vh', maxHeight: '80vh' }}>
                     {reels.flatMap((row, rowIdx) =>
-                        row.map((sym, colIdx) => (
-                            <span
-                                key={`${rowIdx}-${colIdx}`}
-                                className={spinAnim ? "card-anim spin" : "card-anim"}
-                                style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    minHeight: 56,
-                                    width: "100%",
-                                    height: "100%"
-                                }}
-                            >
-                                {React.cloneElement(symbolImages[sym] as React.ReactElement, { style: { height: '8vw', maxHeight: 120, width: 'auto', maxWidth: '90%' } })}
-                            </span>
-                        ))
-                    }
+    row.map((sym, colIdx) => (
+        <span
+            key={`${rowIdx}-${colIdx}`}
+            className={spinAnim ? "card-anim spin" : "card-anim"}
+            style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                minHeight: 56,
+                width: "100%",
+                height: "100%"
+            }}
+        >
+            {React.cloneElement(symbolImages[sym] as React.ReactElement, { style: { height: '8vw', maxHeight: 120, width: 'auto', maxWidth: '90%' } })}
+        </span>
+    ))
+)}
                 </div>
             </div>
 
@@ -377,6 +400,17 @@ export default function PirateSlotsGame() {
                         Fermer
                     </button>
                 </div>
+            )}
+
+            {/* Mini-jeu Chasse au Trésor */}
+            {showMiniGame && (
+                <MiniTreasureGame
+                    onClose={() => setShowMiniGame(false)}
+                    onWin={(reward) => {
+                        setCredits(c => c + reward);
+                        setShowMiniGame(false);
+                    }}
+                />
             )}
         </div>
     );
