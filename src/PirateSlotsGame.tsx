@@ -18,6 +18,7 @@ import mapImg from "./images/map.png";
 import boobaVideo from "./videos/booba.mp4";
 import rireMp3 from "./audio/rire.mp3";
 import oneVideo from "./videos/one.mp4";
+import batSound from "./audio/bat.mp3";
 
 type ExtraSymbolId = "ELEPHANT" | "SOLDAT";
 type SlotSymbolId = PirateSymbolId | ExtraSymbolId;
@@ -98,6 +99,22 @@ function hasFiveElephants(grid: SlotSymbolId[][]): boolean {
     // Diagonale secondaire
     if ([0, 1, 2, 3, 4].every((i) => grid[i][4 - i] === "ELEPHANT")) return true;
 
+    return false;
+}
+
+function hasFiveBats(grid: SlotSymbolId[][]): boolean {
+    // Lignes
+    for (let i = 0; i < 5; i++) {
+        if (grid[i].every((s) => s === "BAT")) return true;
+    }
+    // Colonnes
+    for (let j = 0; j < 5; j++) {
+        if ([0, 1, 2, 3, 4].every((i) => grid[i][j] === "BAT")) return true;
+    }
+    // Diagonale principale
+    if ([0, 1, 2, 3, 4].every((i) => grid[i][i] === "BAT")) return true;
+    // Diagonale secondaire
+    if ([0, 1, 2, 3, 4].every((i) => grid[i][4 - i] === "BAT")) return true;
     return false;
 }
 
@@ -191,7 +208,6 @@ export default function PirateSlotsGame() {
         triggerFx("SPIN", 500);
         sfx.play("spin", { gain: 0.7 });
         setSpinningCols([true, true, true, true, true]);
-        // Animation colonne par colonne
         let currentReels = Array.from({ length: 5 }, () => Array(5).fill(null));
         setReels(currentReels as SlotSymbolId[][]);
         for (let col = 0; col < 5; col++) {
@@ -204,7 +220,7 @@ export default function PirateSlotsGame() {
         }
         setSpinAnim(false);
         setSpinningCols([false, false, false, false, false]);
-        const grid = currentReels;
+        const grid = currentReels as SlotSymbolId[][];
         let payout = 0;
         const jackpotElephant = hasFiveElephants(grid);
         if (jackpotElephant) {
@@ -257,6 +273,10 @@ export default function PirateSlotsGame() {
             audio.play();
         }
         setLog((prev) => [{ time: Date.now(), bet, reels: grid, payout }, ...prev].slice(0, 30));
+        if (hasFiveBats(grid)) {
+            const audio = new Audio(batSound);
+            audio.play();
+        }
     }
 
     return (
@@ -452,41 +472,29 @@ export default function PirateSlotsGame() {
                         top: 0,
                         width: "100vw",
                         height: "100vh",
-                        background: "rgba(0,0,0,0.85)",
+                        background: "rgba(0,0,0,0.0)",
                         zIndex: 9999,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
                         flexDirection: "column",
-                        padding: 16
+                        pointerEvents: "none"
                     }}
                 >
                     <video
                         src={boobaVideo}
                         autoPlay
-                        controls
+                        loop
+                        muted
                         style={{
                             maxWidth: "90vw",
                             maxHeight: "80vh",
                             borderRadius: 16,
-                            boxShadow: "0 4px 32px #000"
+                            boxShadow: "0 4px 32px #000",
+                            opacity: 0.5,
+                            pointerEvents: "none"
                         }}
                     />
-                    <button
-                        onClick={() => setShowBooba(false)}
-                        style={{
-                            marginTop: 24,
-                            fontSize: 22,
-                            padding: "12px 32px",
-                            borderRadius: 8,
-                            background: "#ff9800",
-                            color: "#222",
-                            border: "none",
-                            cursor: "pointer"
-                        }}
-                    >
-                        Fermer
-                    </button>
                 </div>
             )}
 
