@@ -3,6 +3,8 @@ import { pickWeightedPirate, PirateSymbolId } from "./pirateSlots";
 import { useSound } from "./audio/useSound";
 import "./PirateSlotsGame.css";
 import MiniTreasureGame from "./MiniTreasureGame";
+import CarteMiniGame from "./CarteMiniGame";
+import lingotImg from "./images/lingot.png";
 
 // Images
 import elephantImg from "./images/elephant.png";
@@ -198,7 +200,6 @@ function spinColumn(colIdx: number): SlotSymbolId[] {
         { id: "BAT", prob: 0.13 },
         { id: "BLUNDERBUSS", prob: 0.10 },
         { id: "MAP", prob: 0.18 },      // augmenté
-        { id: "PARROT", prob: 0.10 },
     ];
     if (colIdx === 0 || colIdx === 2 || colIdx === 4) {
         symbols.push({ id: "PIRATE", prob: 0.08 }); // augmenté
@@ -252,6 +253,7 @@ export default function PirateSlotsGame() {
     const [musicReady, setMusicReady] = useState(false);
     const fadeIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const [showSparta, setShowSparta] = useState(false);
+    const [showCarteMiniGame, setShowCarteMiniGame] = useState(false);
 
     const canSpin = credits >= bet && bet > 0;
     const totalWon = useMemo(() => log.reduce((sum, x) => sum + x.payout, 0), [log]);
@@ -334,7 +336,8 @@ export default function PirateSlotsGame() {
         setCredits((c) => c - bet);
         setSpinAnim(true);
         setHighlightPirates([]);
-        setHighlightWins([]);
+        // NE PAS reset le highlightWins ici pour garder le highlight après STOP
+        // setHighlightWins([]); // <-- supprimé
         triggerFx("SPIN", 500);
         sfx.play("spin", { gain: 0.7 });
         setSpinningCols([true, true, true, true, true]);
@@ -382,6 +385,20 @@ export default function PirateSlotsGame() {
         }
     }
 
+    function hasPirateInEachColumn(grid: SlotSymbolId[][]): boolean {
+        for (let col = 0; col < 5; col++) {
+            let found = false;
+            for (let row = 0; row < 5; row++) {
+                if (grid[row][col] === "PIRATE") {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) return false;
+        }
+        return true;
+    }
+
     function finalizeSpin(grid?: SlotSymbolId[][]) {
         const finalGrid = grid || reels;
         let payout = 0;
@@ -415,9 +432,18 @@ export default function PirateSlotsGame() {
         // Highlight pirates
         const piratesIdx = flat.map((s, i) => s === "PIRATE" ? i : -1).filter(i => i !== -1);
         setHighlightPirates(piratesIdx);
-        // Highlight winning combos
+        // Highlight winning combos UNIQUEMENT si gain
         const winCombos = getWinningCombos(finalGrid).flat();
-        setHighlightWins(winCombos);
+        if (payout > 0) {
+            setHighlightWins(winCombos);
+        } else {
+            setHighlightWins([]);
+        }
+        // Déclencheur pirate : au moins un pirate dans chaque colonne
+        if (hasPirateInEachColumn(finalGrid)) {
+            triggerFx("WIN", 1000);
+            sfx.play("win", { gain: 0.9 });
+        }
         if (hasFiveBats(finalGrid)) {
             const audio = new Audio(batSound);
             audio.play();
@@ -428,11 +454,14 @@ export default function PirateSlotsGame() {
         if (hasFiveSoldats(finalGrid)) {
             setShowSparta(true);
         }
+        // Déclencheur mini-jeu pirate (seulement si 3 PIRATE)
         if (flat.filter(s => s === "PIRATE").length === 3) {
             setShowMiniGame(true);
             const audio = new Audio(rireMp3);
             audio.play();
         }
+        // Déclencheur mini-jeu carte (toujours)
+        setShowCarteMiniGame(true);
         setLog((prev) => [{ time: Date.now(), bet, reels: finalGrid, payout }, ...prev].slice(0, 30));
     }
 
@@ -770,6 +799,18 @@ export default function PirateSlotsGame() {
                         handleEventEnd();
                         setShowMiniGame(false);
                     }}
+                />
+            )}
+            {/* Mini-jeu Carte au Trésor (MAP x3) */}
+            {showCarteMiniGame && (
+                <CarteMiniGame
+                    onClose={() => { handleEventEnd(); setShowCarteMiniGame(false); }}
+                    onWin={(reward) => {
+                        setCredits(c => c + reward);
+                        handleEventEnd();
+                        setShowCarteMiniGame(false);
+                    }}
+                    lingotImg={lingotImg}
                 />
             )}
         </div>
