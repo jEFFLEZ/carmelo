@@ -20,12 +20,12 @@ type SlotSymbolId = PirateSymbolId | ExtraSymbolId;
 type Fx = "NONE" | "WIN" | "BIGWIN" | "JACKPOT" | "SPIN";
 
 const symbolImages: Record<SlotSymbolId, React.ReactNode> = {
-    PIRATE: "🏴‍☠️",
+    PIRATE: <img src={require("./images/drap.png")} alt="drapeau pirate" style={{ height: 40 }} />,
     CHEST: <img src={coffreImg} alt="coffre" style={{ height: 40 }} />,
-    COIN: "🪙",
+    COIN: <img src={elephantImg} alt="éléphant" style={{ height: 40 }} />,
     BAT: <img src={chauveImg} alt="chauve-souris" style={{ height: 40 }} />,
     BLUNDERBUSS: <img src={gunImg} alt="pistolet pirate" style={{ height: 40 }} />,
-    MAP: "🗺️",
+    MAP: <img src={require("./images/map.png")} alt="carte au trésor" style={{ height: 40 }} />,
     PARROT: <img src={perroImg} alt="perroquet pirate" style={{ height: 40 }} />,
     ELEPHANT: <img src={elephantImg} alt="éléphant" style={{ height: 40 }} />,
     SOLDAT: <img src={soldatImg} alt="soldat spartiate" style={{ height: 40 }} />
@@ -224,59 +224,8 @@ export default function PirateSlotsGame() {
             </div>
 
             <div style={{ display: "flex", gap: 24, alignItems: "center", marginTop: 16 }}>
-                <div style={{ fontSize: 18 }}>
-                    <div><b>Crédits</b>: {credits}</div>
-
-                    <div>
-                        <b>Mise</b>:{" "}
-                        <input
-                            type="number"
-                            value={bet}
-                            min={1}
-                            max={Math.max(1, credits)}
-                            onChange={(e) => setBet(Math.max(1, Math.floor(Number(e.target.value) || 1)))}
-                            style={{ width: 90 }}
-                        />
-                    </div>
-
-                    <div><b>Dernier gain</b>: {lastPayout}</div>
-                    <div><b>Total gagné</b>: {totalWon}</div>
-
-                    <button
-                        onClick={spin}
-                        disabled={!canSpin}
-                        style={{
-                            marginTop: 12,
-                            padding: "10px 16px",
-                            fontSize: 16,
-                            cursor: canSpin ? "pointer" : "not-allowed",
-                            background: "#ff9800",
-                            color: "#222",
-                            borderRadius: 8,
-                            border: "none",
-                            boxShadow: "0 2px 8px #000"
-                        }}
-                    >
-                        SPIN
-                    </button>
-
-                    {!canSpin && <div style={{ marginTop: 8, opacity: 0.7 }}>Pas assez de crédits.</div>}
-                </div>
-
                 {/* Grille 5x5 */}
-                <div
-                    style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(5, 1fr)",
-                        gap: 8,
-                        padding: 18,
-                        borderRadius: 14,
-                        border: "2px solid #ff9800",
-                        background: "#222",
-                        fontSize: 48,
-                        boxShadow: "0 2px 16px #000"
-                    }}
-                >
+                <div className="slot-grid-max">
                     {reels.flatMap((row, rowIdx) =>
                         row.map((sym, colIdx) => (
                             <span
@@ -289,6 +238,23 @@ export default function PirateSlotsGame() {
                         ))
                     )}
                 </div>
+            </div>
+
+            {/* Crédits en bas de page */}
+            <div style={{
+                position: "fixed",
+                left: 0,
+                bottom: 0,
+                width: "100vw",
+                background: "rgba(20,20,30,0.92)",
+                color: "#ffe082",
+                fontSize: 22,
+                textAlign: "center",
+                padding: "12px 0 8px 0",
+                zIndex: 2000,
+                boxShadow: "0 -2px 16px #000a"
+            }}>
+                <b>Crédits :</b> {credits} &nbsp;|&nbsp; <b>Mise :</b> {bet} &nbsp;|&nbsp; <b>Dernier gain :</b> {lastPayout} &nbsp;|&nbsp; <b>Total gagné :</b> {totalWon}
             </div>
 
             <h2 style={{ marginTop: 28 }}>Historique</h2>
