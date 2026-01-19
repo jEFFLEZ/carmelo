@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import PirateSlotsGame from "./PirateSlotsGame";
-import casionImg from "./images/casion.png";
+import casinoImg from "./images/casino.png";
 
 export default function App() {
   const [showGame, setShowGame] = useState(false);
@@ -18,7 +18,7 @@ export default function App() {
         }}
       >
         <img
-          src={casionImg}
+          src={casinoImg}
           alt="Casino"
           style={{
             maxWidth: 400,
