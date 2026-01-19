@@ -23,6 +23,7 @@ import oneVideo from "./videos/one.mp4";
 import batSound from "./audio/bat.mp3";
 import pirateMusic from "./audio/piratesong.mp3";
 import spartaVideo from "./videos/sparta.mp4";
+import jackMusic from "./audio/jack.mp3";
 
 type ExtraSymbolId = "ELEPHANT" | "SOLDAT";
 type SlotSymbolId = PirateSymbolId | ExtraSymbolId;
@@ -191,18 +192,17 @@ function hasFiveSoldats(grid: SlotSymbolId[][]): boolean {
 
 // Nouvelle fonction pour générer une colonne avec contraintes de drapeau pirate
 function spinColumn(colIdx: number): SlotSymbolId[] {
-    // Probabilités personnalisées
-    // Drapeau pirate rare et seulement sur col 0, 2, 4
+    // Probabilités boostées pour tester tous les déclencheurs
     const symbols: { id: SlotSymbolId; prob: number }[] = [
-        { id: "ELEPHANT", prob: 0.22 }, // augmenté
-        { id: "SOLDAT", prob: 0.22 },   // augmenté
-        { id: "COIN", prob: 0.20 },     // augmenté
-        { id: "BAT", prob: 0.13 },
+        { id: "ELEPHANT", prob: 0.18 }, // + fréquent
+        { id: "SOLDAT", prob: 0.18 },   // + fréquent
+        { id: "COIN", prob: 0.16 },
+        { id: "BAT", prob: 0.16 },      // + fréquent
         { id: "BLUNDERBUSS", prob: 0.10 },
-        { id: "MAP", prob: 0.18 },      // augmenté
+        { id: "MAP", prob: 0.08 },
     ];
     if (colIdx === 0 || colIdx === 2 || colIdx === 4) {
-        symbols.push({ id: "PIRATE", prob: 0.08 }); // augmenté
+        symbols.push({ id: "PIRATE", prob: 0.14 }); // + fréquent pour mini-jeu pirate
     }
     // Normalise
     const total = symbols.reduce((sum, s) => sum + s.prob, 0);
@@ -254,6 +254,7 @@ export default function PirateSlotsGame() {
     const fadeIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const [showSparta, setShowSparta] = useState(false);
     const [showCarteMiniGame, setShowCarteMiniGame] = useState(false);
+    const [treasureMusic, setTreasureMusic] = useState<HTMLAudioElement | null>(null);
 
     const canSpin = credits >= bet && bet > 0;
     const totalWon = useMemo(() => log.reduce((sum, x) => sum + x.payout, 0), [log]);
@@ -262,7 +263,7 @@ export default function PirateSlotsGame() {
         if (!pirateAudioRef.current) {
             pirateAudioRef.current = new Audio(pirateMusic);
             pirateAudioRef.current.loop = true;
-            pirateAudioRef.current.volume = 0.7;
+            pirateAudioRef.current.volume = 0.25; // volume réduit
             pirateAudioRef.current.autoplay = true;
             pirateAudioRef.current.addEventListener("canplaythrough", () => setMusicReady(true));
         }
@@ -352,7 +353,7 @@ export default function PirateSlotsGame() {
             spinIntervals.current[col] = setInterval(() => {
                 const randomCol = Array.from({ length: 5 }, () => {
                     // On pioche un symbole aléatoire (hors PIRATE/ELEPHANT/SOLDAT pour + de variété)
-                    const pool = ["COIN", "BAT", "BLUNDERBUSS", "MAP", "PARROT"];
+                    const pool = ["COIN", "BAT", "BLUNDERBUSS", "MAP"];
                     return pool[Math.floor(Math.random() * pool.length)] as SlotSymbolId;
                 });
                 setReels(prev => {
@@ -404,17 +405,27 @@ export default function PirateSlotsGame() {
         let payout = 0;
         const jackpotElephant = hasFiveElephants(finalGrid);
         const jackpotSoldat = hasFiveSoldats(finalGrid);
+        let winIndexes: number[] = [];
         if (jackpotElephant) {
             payout = bet * 50;
             triggerFx("JACKPOT", 1400);
+            // Highlight all elephants
+            winIndexes = finalGrid.flat().map((s, i) => s === "ELEPHANT" ? i : -1).filter(i => i !== -1);
         } else if (jackpotSoldat) {
             payout = bet * 40;
             triggerFx("BIGWIN", 1200);
+            // Highlight all soldats
+            winIndexes = finalGrid.flat().map((s, i) => s === "SOLDAT" ? i : -1).filter(i => i !== -1);
         } else {
             const flat = finalGrid.flat();
             const coinCount = flat.filter((s) => s === "COIN").length;
-            if (coinCount >= 7) payout = bet * 5;
-            else if (coinCount >= 5) payout = bet * 2;
+            if (coinCount >= 7) {
+                payout = bet * 5;
+                winIndexes = flat.map((s, i) => s === "COIN" ? i : -1).filter(i => i !== -1);
+            } else if (coinCount >= 5) {
+                payout = bet * 2;
+                winIndexes = flat.map((s, i) => s === "COIN" ? i : -1).filter(i => i !== -1);
+            }
             if (payout >= bet * 5) triggerFx("BIGWIN", 1000);
             else if (payout > 0) triggerFx("WIN", 800);
         }
@@ -433,9 +444,10 @@ export default function PirateSlotsGame() {
         const piratesIdx = flat.map((s, i) => s === "PIRATE" ? i : -1).filter(i => i !== -1);
         setHighlightPirates(piratesIdx);
         // Highlight winning combos UNIQUEMENT si gain
+        // Ajoute aussi les winIndexes pour les gains de pièces
         const winCombos = getWinningCombos(finalGrid).flat();
         if (payout > 0) {
-            setHighlightWins(winCombos);
+            setHighlightWins([...new Set([...winCombos, ...winIndexes])]);
         } else {
             setHighlightWins([]);
         }
@@ -462,9 +474,28 @@ export default function PirateSlotsGame() {
         }
         // Déclencheur mini-jeu carte (MAP x3 seulement)
         if (flat.filter(s => s === "MAP").length === 3) {
+            handleCarteMiniGameOpen();
             setShowCarteMiniGame(true);
         }
         setLog((prev) => [{ time: Date.now(), bet, reels: finalGrid, payout }, ...prev].slice(0, 30));
+    }
+
+    function handleCarteMiniGameOpen() {
+        // Stoppe la musique principale
+        pirateAudioRef.current?.pause();
+        // Joue la musique de la chasse au trésor
+        const audio = new Audio(jackMusic);
+        audio.loop = true;
+        audio.volume = 0.5;
+        audio.play();
+        setTreasureMusic(audio);
+    }
+    function handleCarteMiniGameClose() {
+        // Stoppe la musique de la chasse au trésor
+        treasureMusic?.pause();
+        setTreasureMusic(null);
+        // Relance la musique principale
+        pirateAudioRef.current?.play();
     }
 
     // Ajout d'une fonction pour obtenir la couleur selon le symbole
@@ -806,9 +837,10 @@ export default function PirateSlotsGame() {
             {/* Mini-jeu Carte au Trésor (MAP x3) */}
             {showCarteMiniGame && (
                 <CarteMiniGame
-                    onClose={() => { handleEventEnd(); setShowCarteMiniGame(false); }}
+                    onClose={() => { handleCarteMiniGameClose(); handleEventEnd(); setShowCarteMiniGame(false); }}
                     onWin={(reward) => {
                         setCredits(c => c + reward);
+                        handleCarteMiniGameClose();
                         handleEventEnd();
                         setShowCarteMiniGame(false);
                     }}
