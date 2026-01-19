@@ -202,7 +202,10 @@ export default function PirateSlotsGame() {
             <LanternGlow />
             <FxOverlay fx={fx} />
 
-            <h1 style={{ fontSize: 38, textShadow: "2px 2px 8px #000" }}>🏴‍☠️ Pirate Slots</h1>
+            <h1 style={{ fontSize: 38, textShadow: "2px 2px 8px #000", display: 'flex', alignItems: 'center', gap: 16, justifyContent: 'center' }}>
+                <img src={drapImg} alt="drapeau pirate" style={{ height: 48, verticalAlign: 'middle' }} />
+                Funesterie
+            </h1>
 
             <div style={{ display: "flex", gap: 16, alignItems: "center", marginTop: 8 }}>
                 <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -227,19 +230,50 @@ export default function PirateSlotsGame() {
 
             <div style={{ display: "flex", gap: 24, alignItems: "center", marginTop: 16 }}>
                 {/* Grille 5x5 */}
-                <div className="slot-grid-max">
+                <div className="slot-grid-max" style={{ height: '70vh', maxHeight: '80vh' }}>
                     {reels.flatMap((row, rowIdx) =>
                         row.map((sym, colIdx) => (
                             <span
                                 key={`${rowIdx}-${colIdx}`}
                                 className={spinAnim ? "card-anim spin" : "card-anim"}
-                                style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 56 }}
+                                style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    minHeight: 56,
+                                    width: "100%",
+                                    height: "100%"
+                                }}
                             >
-                                {symbolImages[sym]}
+                                {React.cloneElement(symbolImages[sym] as React.ReactElement, { style: { height: '8vw', maxHeight: 120, width: 'auto', maxWidth: '90%' } })}
                             </span>
                         ))
-                    )}
+                    }
                 </div>
+            </div>
+
+            {/* Bouton SPIN centré et visible */}
+            <div style={{ display: 'flex', justifyContent: 'center', margin: '32px 0 0 0', width: '100%' }}>
+                <button
+                    onClick={spin}
+                    disabled={!canSpin}
+                    style={{
+                        padding: '18px 48px',
+                        fontSize: 32,
+                        fontWeight: 700,
+                        cursor: canSpin ? 'pointer' : 'not-allowed',
+                        background: '#ff9800',
+                        color: '#222',
+                        borderRadius: 12,
+                        border: 'none',
+                        boxShadow: '0 2px 16px #000',
+                        margin: '0 auto',
+                        transition: 'background 0.2s',
+                        opacity: canSpin ? 1 : 0.5
+                    }}
+                >
+                    SPIN
+                </button>
             </div>
 
             {/* Crédits en bas de page */}
