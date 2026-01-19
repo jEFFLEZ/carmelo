@@ -96,6 +96,8 @@ export default function PirateSlotsGame() {
     const [showBooba, setShowBooba] = useState(false);
     const [showMiniGame, setShowMiniGame] = useState(false);
     const [showIntro, setShowIntro] = useState(true);
+    // Ajoute un état pour surbrillance des drapeaux pirates
+    const [highlightPirates, setHighlightPirates] = useState<number[]>([]);
 
     const canSpin = credits >= bet && bet > 0;
     const totalWon = useMemo(() => log.reduce((sum, x) => sum + x.payout, 0), [log]);
@@ -110,7 +112,7 @@ export default function PirateSlotsGame() {
     }
 
     function hasThreeFlags(grid: SlotSymbolId[][]) {
-        return grid.flat().filter(s => s === "PIRATE").length >= 3;
+        return grid.flat().filter(s => s === "PIRATE").length === 3;
     }
 
     async function spin() {
@@ -119,6 +121,7 @@ export default function PirateSlotsGame() {
         sfx.play("click", { gain: 0.7 });
         setCredits((c) => c - bet);
         setSpinAnim(true);
+        setHighlightPirates([]); // reset highlight
         triggerFx("SPIN", 500);
         sfx.play("spin", { gain: 0.7 });
         sfx.play("reelStop", { delayMs: 220, gain: 0.85, rate: 1.0 });
@@ -150,8 +153,12 @@ export default function PirateSlotsGame() {
                 else if (payout >= bet * 5) sfx.play("bigwin", { gain: 0.95 });
                 else sfx.play("win", { gain: 0.85 });
             }
-            const hasBat = grid.flat().includes("BAT");
-            const hasBlunder = grid.flat().includes("BLUNDERBUSS");
+            const flat = grid.flat();
+            // Highlight pirates
+            const piratesIdx = flat.map((s, i) => s === "PIRATE" ? i : -1).filter(i => i !== -1);
+            setHighlightPirates(piratesIdx);
+            const hasBat = flat.includes("BAT");
+            const hasBlunder = flat.includes("BLUNDERBUSS");
             if (hasBat) {
                 setShowBat(true);
                 sfx.play("bat", { gain: 0.85 });
@@ -166,7 +173,7 @@ export default function PirateSlotsGame() {
             if (jackpotElephant) {
                 setShowBooba(true);
             }
-            // Déclenche le mini-jeu si 3 drapeaux
+            // Déclenche le mini-jeu si exactement 3 drapeaux
             if (hasThreeFlags(grid)) {
                 setShowMiniGame(true);
                 const audio = new Audio(rireMp3);
@@ -260,7 +267,10 @@ export default function PirateSlotsGame() {
                     {[].concat.apply([], reels).map((sym, idx) => (
                         <span
                             key={idx}
-                            className={spinAnim ? "card-anim spin" : "card-anim"}
+                            className={
+                                (spinAnim ? "card-anim spin rotate" : "card-anim") +
+                                (highlightPirates.includes(idx) ? " pirate-highlight" : "")
+                            }
                             style={{
                                 display: "flex",
                                 alignItems: "center",
