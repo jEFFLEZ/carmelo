@@ -259,3 +259,29 @@ body, .pirate-bg {
   display: block;
   margin: 0 auto;
 }
+
+/* Correction : retire tout fond parasite sur le bouton SPIN */
+button {
+  background-clip: padding-box;
+  box-shadow: 0 2px 16px #000;
+}
+button:focus {
+  outline: none;
+}
+
+/* Correction : retire les bordures blanches parasites sur la grille */
+.slot-grid-max {
+  background: transparent !important;
+  border: 2px solid #ff9800;
+  box-shadow: 0 2px 16px #000;
+}
+
+/* Overlay SVG pour relier les cases gagnantes */
+.win-line-overlay {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 20;
+}

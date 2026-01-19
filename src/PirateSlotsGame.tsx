@@ -48,6 +48,40 @@ function FxOverlay({ fx }: { fx: Fx }) {
     return <div className={`fxOverlay fx-${fx.toLowerCase()}`} />;
 }
 
+// Ajout d'un overlay SVG pour relier les cases gagnantes
+function WinLineOverlay({ winIndexes }: { winIndexes: number[] }) {
+    if (!winIndexes || winIndexes.length < 2) return null;
+    // grille 5x5, index de 0 à 24
+    const cellSize = 1; // en pourcentage, car on utilisera viewBox
+    const points = winIndexes.map(idx => {
+        const row = Math.floor(idx / 5);
+        const col = idx % 5;
+        return `${col * cellSize},${row * cellSize}`;
+    }).join(' ');
+    return (
+        <svg className="win-line-overlay" viewBox="0 0 4 4" style={{
+            position: 'absolute',
+            top: 0, left: 0, width: '100%', height: '100%',
+            pointerEvents: 'none',
+            zIndex: 20
+        }}>
+            <polyline
+                points={winIndexes.map(idx => {
+                    const row = Math.floor(idx / 5);
+                    const col = idx % 5;
+                    // 0 à 1, on multiplie par 20% pour chaque case
+                    return `${(col + 0.5) * 20},${(row + 0.5) * 20}`;
+                }).join(' ')}
+                stroke="#ffe082"
+                strokeWidth="6"
+                fill="none"
+                strokeLinejoin="round"
+                filter="drop-shadow(0 0 8px #ffe082)"
+            />
+        </svg>
+    );
+}
+
 // ---- Grille 5x5 ----
 function spinGrid(): SlotSymbolId[][] {
     // Probabilités ajustées :
@@ -161,7 +195,6 @@ function spinGridCols(): SlotSymbolId[][] {
 
 export default function PirateSlotsGame() {
     const sfx = useSound();
-
     const [credits, setCredits] = useState<number>(1000);
     const [bet, setBet] = useState<number>(20);
     const [reels, setReels] = useState<SlotSymbolId[][]>(() => spinGridCols());
@@ -175,15 +208,15 @@ export default function PirateSlotsGame() {
     const [showBooba, setShowBooba] = useState(false);
     const [showMiniGame, setShowMiniGame] = useState(false);
     const [showIntro, setShowIntro] = useState(true);
-    // Ajoute un état pour surbrillance des drapeaux pirates et des cases gagnantes
     const [highlightPirates, setHighlightPirates] = useState<number[]>([]);
     const [highlightWins, setHighlightWins] = useState<number[]>([]);
-    // Ajoute un état pour le spin colonne par colonne
     const [spinningCols, setSpinningCols] = useState([false, false, false, false, false]);
     const [isSpinning, setIsSpinning] = useState(false);
     const spinTimeouts = useRef<NodeJS.Timeout[]>([]);
+    const spinIntervals = useRef<NodeJS.Timeout[]>([]); // Pour l'animation de spin
     const pirateAudioRef = useRef<HTMLAudioElement | null>(null);
     const [musicReady, setMusicReady] = useState(false);
+    const fadeIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
     const canSpin = credits >= bet && bet > 0;
     const totalWon = useMemo(() => log.reduce((sum, x) => sum + x.payout, 0), [log]);
@@ -201,21 +234,24 @@ export default function PirateSlotsGame() {
         }
         return () => {
             pirateAudioRef.current?.pause();
+            if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current);
         };
     }, [musicReady]);
 
+    // Correction fade: un seul intervalle à la fois
     function fadeMusic(vol: number, duration: number = 600) {
         const audio = pirateAudioRef.current;
         if (!audio) return;
+        if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current);
         const start = audio.volume;
         const step = (vol - start) / (duration / 50);
         let i = 0;
-        const fade = setInterval(() => {
+        fadeIntervalRef.current = setInterval(() => {
             i++;
             audio.volume = Math.max(0, Math.min(1, audio.volume + step));
             if ((step < 0 && audio.volume <= vol) || (step > 0 && audio.volume >= vol) || i > duration / 50) {
                 audio.volume = vol;
-                clearInterval(fade);
+                if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current);
             }
         }, 50);
     }
@@ -244,11 +280,12 @@ export default function PirateSlotsGame() {
         return grid.flat().filter(s => s === "PIRATE").length === 3;
     }
 
-    // Nouvelle fonction de spin colonne par colonne
+    // Nouvelle fonction de spin colonne par colonne avec animation
     async function spin() {
         if (isSpinning) {
             // STOP: Arrête tous les timeouts et affiche le résultat final
             spinTimeouts.current.forEach(t => clearTimeout(t));
+            spinIntervals.current.forEach(t => clearInterval(t));
             setSpinningCols([false, false, false, false, false]);
             setSpinAnim(false);
             setIsSpinning(false);
@@ -270,21 +307,43 @@ export default function PirateSlotsGame() {
         let currentReels = Array.from({ length: 5 }, () => Array(5).fill(null));
         setReels(currentReels as SlotSymbolId[][]);
         spinTimeouts.current = [];
+        spinIntervals.current = [];
+        // Pour chaque colonne, lancer une animation de spin (images aléatoires)
         for (let col = 0; col < 5; col++) {
-            const t = setTimeout(() => {
+            // Animation de spin : change les symboles de la colonne toutes les 80ms
+            spinIntervals.current[col] = setInterval(() => {
+                const randomCol = Array.from({ length: 5 }, () => {
+                    // On pioche un symbole aléatoire (hors PIRATE/ELEPHANT/SOLDAT pour + de variété)
+                    const pool = ["COIN", "BAT", "BLUNDERBUSS", "MAP", "PARROT"];
+                    return pool[Math.floor(Math.random() * pool.length)] as SlotSymbolId;
+                });
+                setReels(prev => {
+                    const next = prev.map(row => [...row]);
+                    for (let row = 0; row < 5; row++) {
+                        next[row][col] = randomCol[row];
+                    }
+                    return next;
+                });
+            }, 80);
+            // Après 2 secondes, arrêter l'animation et afficher la vraie colonne
+            spinTimeouts.current[col] = setTimeout(() => {
+                clearInterval(spinIntervals.current[col]);
                 const colSymbols = spinColumn(col);
-                for (let row = 0; row < 5; row++) {
-                    currentReels[row][col] = colSymbols[row];
-                }
-                setReels(currentReels.map(r => [...r]));
+                setReels(prev => {
+                    const next = prev.map(row => [...row]);
+                    for (let row = 0; row < 5; row++) {
+                        next[row][col] = colSymbols[row];
+                    }
+                    return next;
+                });
+                // Si c'est la dernière colonne, on termine le spin
                 if (col === 4) {
                     setSpinAnim(false);
                     setSpinningCols([false, false, false, false, false]);
                     setIsSpinning(false);
                     finalizeSpin(currentReels as SlotSymbolId[][]);
                 }
-            }, col * 400);
-            spinTimeouts.current.push(t);
+            }, 2000 * (col + 1)); // 2s par colonne, enchaîné
         }
     }
 
@@ -415,29 +474,33 @@ export default function PirateSlotsGame() {
 
             <div style={{ display: "flex", gap: 24, alignItems: "center", marginTop: 0, marginBottom: 0 }}>
                 {/* Grille 5x5 */}
-                <div className="slot-grid-max" style={{ height: '50vh', maxHeight: '60vh', minHeight: 320 }}>
-                    {[].concat.apply([], reels).map((sym, idx) => (
-                        <span
-                            key={idx}
-                            className={
-                                (spinAnim ? "card-anim spin rotate" : "card-anim") +
-                                (highlightPirates.includes(idx) ? " pirate-highlight-multi" : "") +
-                                (highlightWins.includes(idx) ? " win-highlight" : "")
-                            }
-                            style={{
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                minHeight: 56,
-                                width: "100%",
-                                height: "100%"
-                            }}
-                        >
-                            {symbolImages[sym] && React.isValidElement(symbolImages[sym])
-                                ? React.cloneElement(symbolImages[sym] as React.ReactElement, { style: { height: '8vw', maxHeight: 120, width: 'auto', maxWidth: '90%', objectFit: 'contain' } })
-                                : null}
-                        </span>
-                    ))}
+                <div style={{position:'relative', width:'100%', height:'100%'}}>
+                  <div className="slot-grid-max" style={{ height: '50vh', maxHeight: '60vh', minHeight: 320 }}>
+                      {reels.flat().map((sym, idx) => (
+                          <span
+                              key={idx}
+                              className={
+                                  (spinAnim ? "card-anim spin rotate" : "card-anim") +
+                                  (highlightPirates.includes(idx) ? " pirate-highlight-multi" : "") +
+                                  (highlightWins.includes(idx) ? " win-highlight" : "")
+                              }
+                              style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  minHeight: 56,
+                                  width: "100%",
+                                  height: "100%"
+                              }}
+                          >
+                              {symbolImages[sym] && React.isValidElement(symbolImages[sym])
+                                  ? React.cloneElement(symbolImages[sym] as React.ReactElement, { style: { height: '8vw', maxHeight: 120, width: 'auto', maxWidth: '90%', objectFit: 'contain' } })
+                                  : null}
+                          </span>
+                      ))}
+                  </div>
+                  {/* Overlay SVG pour relier les cases gagnantes */}
+                  {highlightWins.length >= 2 && <WinLineOverlay winIndexes={highlightWins} />}
                 </div>
             </div>
 
@@ -458,7 +521,10 @@ export default function PirateSlotsGame() {
                         boxShadow: '0 2px 16px #000',
                         margin: '0 auto',
                         transition: 'background 0.2s',
-                        opacity: (canSpin || isSpinning) ? 1 : 0.5
+                        opacity: (canSpin || isSpinning) ? 1 : 0.5,
+                        outline: 'none',
+                        position: 'relative',
+                        zIndex: 2
                     }}
                 >
                     {isSpinning ? 'STOP' : 'SPIN'}
@@ -483,38 +549,52 @@ export default function PirateSlotsGame() {
             </div>
 
             <h2 style={{ marginTop: 28 }}>Historique</h2>
-
-            <div style={{ display: "grid", gap: 8 }}>
-                {log.map((x) => (
-                    <div
-                        key={x.time}
-                        style={{
-                            display: "flex",
-                            gap: 12,
-                            alignItems: "center",
-                            borderBottom: "1px solid #333",
-                            paddingBottom: 8
-                        }}
-                    >
-                        <span style={{ width: 86, opacity: 0.7 }}>{new Date(x.time).toLocaleTimeString()}</span>
-                        <span style={{ width: 80 }}>Mise {x.bet}</span>
-
-                        <span style={{ width: 220 }}>
-                            <span style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 2 }}>
-                                {x.reels.flat().map((sym, i) => (
-                                    <span key={i} className="card-anim" style={{ display: "flex", justifyContent: "center" }}>
-                                        {symbolImages[sym]}
-                                    </span>
-                                ))}
-                            </span>
-                        </span>
-
-                        <span style={{ width: 90 }}><b>+{x.payout}</b></span>
-                    </div>
-                ))}
-
-                {log.length === 0 && <div style={{ opacity: 0.7 }}>Aucun spin pour l'instant.</div>}
-            </div>
+            <div style={{
+  display: "grid",
+  gap: 8,
+  maxHeight: '28vh',
+  overflowY: 'auto',
+  marginTop: 8,
+  marginBottom: 32,
+  background: 'rgba(20,20,30,0.85)',
+  borderRadius: 12,
+  boxShadow: '0 2px 16px #000a',
+  padding: '12px 8px',
+  position: 'relative',
+  zIndex: 10
+}}>
+  {log.map((x) => (
+    <div
+      key={x.time}
+      style={{
+        display: "flex",
+        gap: 12,
+        alignItems: "center",
+        borderBottom: "1px solid #333",
+        paddingBottom: 8,
+        fontSize: 18,
+        color: '#ffe082',
+        background: 'rgba(30,30,40,0.7)',
+        borderRadius: 8,
+        marginBottom: 2
+      }}
+    >
+      <span style={{ width: 86, opacity: 0.9, fontWeight: 600 }}>{new Date(x.time).toLocaleTimeString()}</span>
+      <span style={{ width: 80, opacity: 0.85 }}>Mise {x.bet}</span>
+      <span style={{ width: 220 }}>
+        <span style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 2 }}>
+          {x.reels.flat().map((sym, i) => (
+            <span key={i} className="card-anim" style={{ display: "flex", justifyContent: "center" }}>
+              {symbolImages[sym]}
+            </span>
+          ))}
+        </span>
+      </span>
+      <span style={{ width: 90, fontWeight: 700, color: '#fffbe6' }}>+{x.payout}</span>
+    </div>
+  ))}
+  {log.length === 0 && <div style={{ opacity: 0.7 }}>Aucun spin pour l'instant.</div>}
+</div>
 
             {/* FX visuels */}
             {showBat && <BatAnimation />}
