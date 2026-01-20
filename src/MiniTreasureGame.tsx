@@ -152,7 +152,7 @@ export default function MiniTreasureGame({
                   style={{ 
                     width: '100%', 
                     height: '100%', 
-                    objectFit: 'contain',
+                    objectFit: 'cover', // Changement ici pour bien couvrir la case
                     maxWidth: '100%',
                     maxHeight: '100%'
                   }}
