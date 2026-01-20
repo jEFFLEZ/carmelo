@@ -1,7 +1,10 @@
 import React, { useState } from "react";
 import carteImg from "./images/carte.png";
+import moneySound from "./audio/money.mp3";
+import failSound from "./audio/fail.mp3";
+import coffreImg from "./images/coffre.png";
 
-export default function CarteMiniGame({ onClose, onWin, lingotImg }: { onClose: () => void; onWin: (reward: number) => void; lingotImg: string }) {
+export default function CarteMiniGame({ onClose, onWin }: { onClose: () => void; onWin: (reward: number) => void; }) {
   // Coordonnées précises des 3 croix (ajustées pour coller aux croix sur l'image)
   const crossZones = [
     { left: "23.5%", top: "39.5%" },
@@ -18,10 +21,19 @@ export default function CarteMiniGame({ onClose, onWin, lingotImg }: { onClose: 
     setSelected(idx);
     setRevealed(true);
     if (idx === goldIndex) {
-      setMessage("Bravo ! Tu as trouvé le lingot d'or !");
-      setTimeout(() => onWin(100), 1200);
+      setMessage("Bravo ! Tu as trouvé le coffre !");
+      // Joue le son money.mp3 si gagné
+      const audio = new Audio(moneySound);
+      audio.volume = 0.85;
+      audio.loop = false;
+      audio.play();
+      setTimeout(() => onWin(300), 1200);
     } else {
-      setMessage("Raté ! Pas de lingot ici...");
+      setMessage("Raté ! Pas de coffre ici...");
+      // Joue le son fail.mp3 si perdu
+      const audio = new Audio(failSound);
+      audio.volume = 0.7;
+      audio.play();
     }
   }
 
@@ -45,26 +57,23 @@ export default function CarteMiniGame({ onClose, onWin, lingotImg }: { onClose: 
               position: "absolute",
               left: pos.left,
               top: pos.top,
-              width: 48, height: 48,
+              width: 90, height: 90, // 3x plus gros
               background: "rgba(0,0,0,0.05)",
-              border: revealed && idx === goldIndex ? "3px solid gold" : "3px solid #c00",
+              border: revealed && idx === goldIndex ? "4px solid gold" : "4px solid #c00",
               borderRadius: "50%",
               cursor: revealed ? "default" : "pointer",
               transform: "translate(-50%, -50%)",
               zIndex: 2,
               outline: idx === selected ? "2px solid #ffe082" : "none",
-              boxShadow: revealed && idx === goldIndex ? "0 0 16px 4px gold" : "0 0 8px 2px #c00",
+              boxShadow: revealed && idx === goldIndex ? "0 0 24px 8px gold" : "0 0 12px 4px #c00",
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              padding: 0
+              padding: 0,
+              transition: 'all 0.2s',
             }}
           >
-            {/* Affiche le lingot triplé si gagné */}
+            {/* Affiche le coffre géant si c'est la croix gagnante */}
             {revealed && idx === goldIndex ? (
-              <span style={{ display: 'flex', gap: 2 }}>
-                <img src={lingotImg} alt="Lingot d'or" style={{ width: 22, height: 22, objectFit: 'contain' }} />
-                <img src={lingotImg} alt="Lingot d'or" style={{ width: 22, height: 22, objectFit: 'contain' }} />
-                <img src={lingotImg} alt="Lingot d'or" style={{ width: 22, height: 22, objectFit: 'contain' }} />
-              </span>
+              <img src={coffreImg} alt="Coffre" style={{ width: 70, height: 70, objectFit: 'contain', filter: 'drop-shadow(0 0 12px gold)' }} />
             ) : null}
           </button>
         ))}

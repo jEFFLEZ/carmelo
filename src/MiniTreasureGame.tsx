@@ -7,6 +7,7 @@ import saphirSound from "./audio/saphir.mp3";
 import rubisSound from "./audio/rubis.mp3";
 import opaleSound from "./audio/opale.mp3";
 import drapImg from "./images/drap.png";
+import canonSound from "./audio/canon.mp3";
 
 const diamonds = [
   { img: opaleImg, reward: 500, alt: "opale (gros gain)", sound: opaleSound },
@@ -54,6 +55,10 @@ export default function MiniTreasureGame({
       setTotalWin((w) => w + boat.diamond.reward);
       // Joue le son associé à la pierre précieuse
       const audio = new Audio(boat.diamond.sound);
+      audio.play();
+    } else {
+      // Joue le son de canon si ce n'est pas une gemme
+      const audio = new Audio(canonSound);
       audio.play();
     }
     const left = shotsLeft - 1;
