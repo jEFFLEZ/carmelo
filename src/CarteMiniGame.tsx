@@ -1,10 +1,19 @@
-import React, { useState } from "react";
+import * as React from "react";
+import { useState } from "react";
 import carteImg from "./images/carte.png";
 import moneySound from "./audio/money.mp3";
 import failSound from "./audio/fail.mp3";
 import coffreImg from "./images/coffre.png";
 
-export default function CarteMiniGame({ onClose, onWin }: { onClose: () => void; onWin: (reward: number) => void; }) {
+export default function CarteMiniGame({
+  onClose,
+  onWin,
+  lingotImg
+}: {
+  onClose: () => void;
+  onWin: (reward: number) => void;
+  lingotImg?: string;
+}) {
   // Coordonnées précises des 3 croix (ajustées pour coller aux croix sur l'image)
   const crossZones = [
     { left: "23.5%", top: "39.5%" },

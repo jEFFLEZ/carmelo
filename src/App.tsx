@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import * as React from "react";
+import { useState } from "react";
 import PirateSlotsGame from "./PirateSlotsGame";
 import casinoImg from "./images/casino.png";
 

@@ -1,5 +1,6 @@
 // Pirate Slots RNG & Logic
 import { randInt } from "./rng";
+import * as React from "react";
 
 export type PirateSymbolId = "PIRATE" | "CHEST" | "COIN" | "BAT" | "BLUNDERBUSS" | "MAP" | "PARROT";
 

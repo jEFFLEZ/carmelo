@@ -1,4 +1,5 @@
 import * as React from "react";
+import "./ts-polyfills";
 import { useMemo, useState, useRef } from "react";
 import { pickWeightedPirate, PirateSymbolId } from "./pirateSlots";
 import { useSound } from "./audio/useSound";
@@ -6,7 +7,6 @@ import "./PirateSlotsGame.css";
 import MiniTreasureGame from "./MiniTreasureGame";
 import CarteMiniGame from "./CarteMiniGame";
 import lingotImg from "./images/lingot.png";
-
 // Images
 import elephantImg from "./images/elephant.png";
 import soldatImg from "./images/soldat.png";
@@ -17,7 +17,6 @@ import coffreImg from "./images/coffre.png"; // Ajouté
 import drapImg from "./images/drap.png";
 import mapImg from "./images/map.png";
 import flushImg from "./images/flush.png";
-
 // IMPORTANT: évite les accents dans les dossiers -> ./videos/booba.mp4
 import boobaVideo from "./videos/booba.mp4";
 import rireMp3 from "./audio/rire.mp3";
@@ -35,12 +34,10 @@ import saphirSound from "./audio/saphir.mp3";
 import rubisSound from "./audio/rubis.mp3";
 import opaleSound from "./audio/opale.mp3";
 import rangerVideo from "./videos/ranger.mp4";
-
+import batVideo from "./videos/bat.mp4";
 type ExtraSymbolId = "ELEPHANT" | "SOLDAT" | "JOKER";
 type SlotSymbolId = PirateSymbolId | ExtraSymbolId;
-
 type Fx = "NONE" | "WIN" | "BIGWIN" | "JACKPOT" | "SPIN";
-
 // Correction du type pour permettre React.cloneElement avec style
 const symbolImages: Record<SlotSymbolId, JSX.Element> = {
     PIRATE: <img src={drapImg} alt="drapeau pirate" style={{ height: 80 }} />,
@@ -54,13 +51,12 @@ const symbolImages: Record<SlotSymbolId, JSX.Element> = {
     SOLDAT: <img src={soldatImg} alt="soldat spartiate" style={{ height: 80 }} />,
     JOKER: <img src={flushImg} alt="joker" style={{ height: 80 }} />
 };
-
 // FX placeholders (CSS)
 function BatAnimation() {
     return (
         <div className="bat-animation">
             <video
-                src={require('./videos/bat.mp4')}
+                src={batVideo}
                 autoPlay
                 muted
                 style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }}
@@ -69,7 +65,6 @@ function BatAnimation() {
         </div>
     );
 }
-
 // Nouveau composant pour faire tomber plusieurs lingots
 function CoinDropAnimation({ count = 1 }: { count?: number }) { 
     return (
@@ -93,14 +88,12 @@ function CoinDropAnimation({ count = 1 }: { count?: number }) {
         </>
     );
 }
-
 function BlunderbussShotAnimation() { return <div className="blunderbuss-shot-animation" />; }
 function BrumeBg() { return <div className="pirate-brume" />; }
 function LanternGlow() { return <div className="lantern-glow" />; }
 function FxOverlay({ fx }: { fx: Fx }) {
     return <div className={`fxOverlay fx-${fx.toLowerCase()}`} />;
 }
-
 // Ajout d'un overlay SVG pour relier les cases gagnantes
 function WinLineOverlay({ winIndexes }: { winIndexes: number[] }) {
     if (!winIndexes || winIndexes.length < 2) return null;
@@ -125,7 +118,6 @@ function WinLineOverlay({ winIndexes }: { winIndexes: number[] }) {
                     // 0 à 1, on multiplie par 20% pour chaque case
                     return `${(col + 0.5) * 20},${(row + 0.5) * 20}`;
                 }).join(' ')}
-
                 stroke="#ffe082"
                 strokeWidth="6"
                 fill="none"
@@ -135,7 +127,6 @@ function WinLineOverlay({ winIndexes }: { winIndexes: number[] }) {
         </svg>
     );
 }
-
 // ---- Grille 5x5 ----
 function spinGrid(): SlotSymbolId[][] {
     // Probabilités ajustées :
@@ -151,18 +142,15 @@ function spinGrid(): SlotSymbolId[][] {
         Array.from({ length: 5 }, () => pick())
     );
 }
-
 // Détection des combinaisons gagnantes (lignes, colonnes, diagonales) avec support du JOKER
 function getWinningCombos(grid: SlotSymbolId[][]): number[][] {
     const wins: number[][] = [];
-    
     // Fonction helper pour vérifier si deux symboles correspondent (en tenant compte du JOKER)
     const symbolsMatch = (sym1: SlotSymbolId, sym2: SlotSymbolId): boolean => {
         // Correction : seul "JOKER" est joker, jamais "PIRATE"
         if (sym1 === "JOKER" || sym2 === "JOKER") return true;
         return sym1 === sym2;
     };
-    
     // Fonction helper pour vérifier si une ligne entière correspond
     const allSymbolsMatch = (symbols: SlotSymbolId[]): boolean => {
         // Correction : le symbole de base ne doit pas être un JOKER ni un PIRATE
@@ -171,7 +159,6 @@ function getWinningCombos(grid: SlotSymbolId[][]): number[][] {
         // Correction : si la ligne contient plusieurs symboles différents (hors JOKER), ce n'est pas gagnant
         return symbols.every(s => symbolsMatch(s, baseSymbol));
     };
-    
     // Lignes
     for (let i = 0; i < 5; i++) {
         if (allSymbolsMatch(grid[i]))
@@ -191,16 +178,13 @@ function getWinningCombos(grid: SlotSymbolId[][]): number[][] {
     const diag2 = [0,1,2,3,4].map(i => grid[i][4-i]);
     if (allSymbolsMatch(diag2))
         wins.push([4,8,12,16,20]);
-    
     return wins;
 }
-
 function hasFiveElephants(grid: SlotSymbolId[][]): boolean {
     const symbolsMatch = (sym1: SlotSymbolId, sym2: SlotSymbolId): boolean => {
         if (sym1 === "JOKER" || sym2 === "JOKER") return true;
         return sym1 === sym2;
     };
-    
     // Lignes
     for (let i = 0; i < 5; i++) {
         if (grid[i].every((s) => s === "ELEPHANT" || s === "JOKER")) return true;
@@ -213,10 +197,8 @@ function hasFiveElephants(grid: SlotSymbolId[][]): boolean {
     if ([0, 1, 2, 3, 4].every((i) => grid[i][i] === "ELEPHANT" || grid[i][i] === "JOKER")) return true;
     // Diagonale secondaire
     if ([0, 1, 2, 3, 4].every((i) => grid[i][4 - i] === "ELEPHANT" || grid[i][4 - i] === "JOKER")) return true;
-
     return false;
 }
-
 function hasFiveBats(grid: SlotSymbolId[][]): boolean {
     // Lignes
     for (let i = 0; i < 5; i++) {
@@ -232,7 +214,6 @@ function hasFiveBats(grid: SlotSymbolId[][]): boolean {
     if ([0, 1, 2, 3, 4].every((i) => grid[i][4 - i] === "BAT" || grid[i][4 - i] === "JOKER")) return true;
     return false;
 }
-
 function hasFiveSoldats(grid: SlotSymbolId[][]): boolean {
     // Lignes
     for (let i = 0; i < 5; i++) {
@@ -248,7 +229,6 @@ function hasFiveSoldats(grid: SlotSymbolId[][]): boolean {
     if ([0, 1, 2, 3, 4].every((i) => grid[i][4 - i] === "SOLDAT" || grid[i][4 - i] === "JOKER")) return true;
     return false;
 }
-
 function hasFiveGuns(grid: SlotSymbolId[][]): boolean {
     // Lignes
     for (let i = 0; i < 5; i++) {
@@ -264,22 +244,21 @@ function hasFiveGuns(grid: SlotSymbolId[][]): boolean {
     if ([0, 1, 2, 3, 4].every((i) => grid[i][4 - i] === "BLUNDERBUSS" || grid[i][4 - i] === "JOKER")) return true;
     return false;
 }
-
 // Nouvelle fonction pour générer une colonne avec contraintes de drapeau pirate
-function spinColumn(colIdx: number): SlotSymbolId[] {
+function spinColumn(colIdx: number, doubleJokerChance: boolean = false): SlotSymbolId[] {
     let symbols: { id: SlotSymbolId; prob: number }[];
     if (colIdx === 0 || colIdx === 2 || colIdx === 4) {
         // Colonnes avec PIRATE
         symbols = [
-            { id: "ELEPHANT", prob: 0.19 },
-            { id: "SOLDAT", prob: 0.19 },
-            { id: "BAT", prob: 0.18 },
-            { id: "MAP", prob: 0.06 },
-            { id: "PIRATE", prob: 0.13 },
+            { id: "ELEPHANT", prob: 0.18 },
+            { id: "SOLDAT", prob: 0.12 },
+            { id: "BAT", prob: 0.15 },
+            { id: "MAP", prob: 0.08 }, // Augmentée
+            { id: "PIRATE", prob: 0.11 },
             { id: "COIN", prob: 0.04 },
             { id: "BLUNDERBUSS", prob: 0.16 },
-            { id: "CHEST", prob: 0.03 }, // Ajout CHEST
-            { id: "JOKER", prob: 0.02 }, // Ratio flush diminué
+            { id: "CHEST", prob: 0.04 },
+            { id: "JOKER", prob: doubleJokerChance ? 0.04 : 0.01 }, // Diminue la proba de base du JOKER
         ];
     } else {
         // Colonnes sans PIRATE
@@ -287,11 +266,11 @@ function spinColumn(colIdx: number): SlotSymbolId[] {
             { id: "ELEPHANT", prob: 0.21 },
             { id: "SOLDAT", prob: 0.21 },
             { id: "BAT", prob: 0.20 },
-            { id: "MAP", prob: 0.06 },
-            { id: "COIN", prob: 0.04 },
+            { id: "MAP", prob: 0.12 }, // Augmentée
+            { id: "COIN", prob: 0.02 },
             { id: "BLUNDERBUSS", prob: 0.23 },
-            { id: "CHEST", prob: 0.03 }, // Ajout CHEST
-            { id: "JOKER", prob: 0.02 }, // Ratio flush diminué
+            { id: "CHEST", prob: 0.03 },
+            { id: "JOKER", prob: doubleJokerChance ? 0.1 : 0.02 }, // Diminue la proba de base du JOKER
         ];
     }
     // Normalise
@@ -309,19 +288,16 @@ function spinColumn(colIdx: number): SlotSymbolId[] {
     return Array.from({ length: 5 }, () => pickOne());
 }
 
-// Nouvelle fonction pour générer la grille colonne par colonne
-function spinGridCols(): SlotSymbolId[][] {
-    const cols = [0, 1, 2, 3, 4].map(colIdx => spinColumn(colIdx));
+function spinGridCols(doubleJokerChance: boolean = false): SlotSymbolId[][] {
+    const cols = [0, 1, 2, 3, 4].map(colIdx => spinColumn(colIdx, doubleJokerChance));
     // Transpose pour obtenir lignes
     return Array.from({ length: 5 }, (_, rowIdx) =>
         cols.map(col => col[rowIdx])
     );
 }
-
 // Ajout des types d'événements et de la queue
-
 type GameEvent =
-  | { type: "VIDEO_BOoba"; ms?: number }
+  | { type: "VIDEO_BOOBA"; ms?: number }
   | { type: "VIDEO_SPARTA"; ms?: number }
   | { type: "VIDEO_JOKER"; ms?: number }
   | { type: "VIDEO_POWER"; ms?: number }
@@ -332,9 +308,21 @@ type GameEvent =
   | { type: "MINI_MAP" }
   | { type: "SFX"; src: string; volume?: number };
 
+function resetAllBonusVideos(setBonusVideoPlayed: React.Dispatch<React.SetStateAction<any>>) {
+  setBonusVideoPlayed({
+    JOKER: false,
+    BOOBA: false,
+    SPARTA: false,
+    EXP: false,
+    POWER: false,
+    RANGER: false,
+    BAT: false
+  });
+}
+
 export default function PirateSlotsGame() {
     const sfx = useSound();
-    const [credits, setCredits] = useState<number>(1000);
+    const [credits, setCredits] = useState<number>(3000); // Mise de départ augmentée à 3000
     const [bet, setBet] = useState<number>(20);
     const [reels, setReels] = useState<SlotSymbolId[][]>(() => spinGridCols());
     const [lastPayout, setLastPayout] = useState<number>(0);
@@ -374,7 +362,6 @@ export default function PirateSlotsGame() {
     const [jokerVideoPlayed, setJokerVideoPlayed] = useState(false);
     const [powerVideoPlayed, setPowerVideoPlayed] = useState(false);
     const [rangerVideoPlayed, setRangerVideoPlayed] = useState(false);
-
     // Nouveaux états pour limiter les vidéos bonus à une seule fois par session de bonus
     const [bonusVideoPlayed, setBonusVideoPlayed] = useState({
         JOKER: false,
@@ -385,14 +372,18 @@ export default function PirateSlotsGame() {
         RANGER: false,
         BAT: false // Ajouté
     });
-
+    const [totalWon, setTotalWon] = useState(0); // Ajout état total gagné
     const eventQueueRef = useRef<GameEvent[]>([]);
     const playingEventRef = useRef(false);
-    const [activeVideo, setActiveVideo] = useState<
-      "NONE" | "BOOBA" | "SPARTA" | "JOKER" | "POWER" | "RANGER" | "EXP"
-    >("NONE");
+    // Ajout des hooks d'état manquants
+const [miniGameShots, setMiniGameShots] = React.useState(3);
+const [jokerLockTurns, setJokerLockTurns] = React.useState<Record<number, number>>({});
+// Correction du type de activeVideo
+const [activeVideo, setActiveVideo] = React.useState<
+  "NONE" | "BOOBA" | "SPARTA" | "JOKER" | "POWER" | "RANGER" | "EXP" | "BAT"
+>("NONE");
     const canSpin = credits >= bet && bet > 0 && Date.now() > cannotSpinUntil;
-    const totalWon = useMemo(() => log.reduce((sum, x) => sum + x.payout, 0), [log]);
+    // const totalWon = useMemo(() => log.reduce((sum, x) => sum + x.payout, 0), [log]); // SUPPRIMÉ
     React.useEffect(() => {
         if (!pirateAudioRef.current) {
             pirateAudioRef.current = new Audio(pirateMusic);
@@ -409,7 +400,6 @@ export default function PirateSlotsGame() {
             if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current);
         };
     }, [musicReady]);
-
     // Correction fade: un seul intervalle à la fois
     function fadeMusic(vol: number, duration: number = 600) {
         const audio = pirateAudioRef.current;
@@ -427,14 +417,12 @@ export default function PirateSlotsGame() {
             }
         }, 50);
     }
-
     function handleEventStart() {
         fadeMusic(0, 600);
     }
     function handleEventEnd() {
         fadeMusic(0.5, 800); // volume réduit après événement (baissé de 0.7 à 0.5)
     }
-
     function triggerFx(kind: Fx, ms = 700) {
         setFx(kind);
         handleEventStart();
@@ -443,11 +431,9 @@ export default function PirateSlotsGame() {
             handleEventEnd();
         }, ms);
     }
-
     async function unlockAudioIfNeeded() {
         if (!sfx.ready) await sfx.unlock();
     }
-
     // Nouvelle fonction de spin colonne par colonne avec animation
     async function spin() {
         if (isSpinning) {
@@ -457,12 +443,10 @@ export default function PirateSlotsGame() {
             setSpinningCols([false, false, false, false, false]);
             setSpinAnim(false);
             setIsSpinning(false);
-            // Correction : force l'affichage de la grille finale avant de calculer le résultat
-            // On régénère la grille finale comme si le spin était allé au bout
-            let finalGrid = spinGridCols();
+            // Correction : force l'affichage de la grille finale avant de calculer le résultat final
+            let finalGrid = spinGridCols(jokerTurnsLeft > 0);
             // Si on a des jokers verrouillés, on les restaure
             if (jokerTurnsLeft > 0) {
-                const flat = finalGrid.flat();
                 lockedJokerPositions.forEach(pos => {
                     const row = Math.floor(pos / 5);
                     const col = pos % 5;
@@ -491,22 +475,18 @@ export default function PirateSlotsGame() {
         }
         
         // Génère une nouvelle grille en préservant les jokers verrouillés
-        let currentReels = spinGridCols();
-        
+        let currentReels = spinGridCols(jokerTurnsLeft > 0);
         // Si on a des tours de joker actifs, restaurer les jokers aux Positions verrouillées
         if (jokerTurnsLeft > 0) {
-            const flat = currentReels.flat();
             lockedJokerPositions.forEach(pos => {
                 const row = Math.floor(pos / 5);
                 const col = pos % 5;
                 currentReels[row][col] = "JOKER";
             });
         }
-        
         setReels(currentReels as SlotSymbolId[][]);
         spinTimeouts.current = [];
         spinIntervals.current = [];
-        
         // Pour chaque colonne, lancer une animation de spin (images aléatoires)
         for (let col = 0; col < 5; col++) {
             spinIntervals.current[col] = setInterval(() => {
@@ -519,13 +499,20 @@ export default function PirateSlotsGame() {
                     for (let row = 0; row < 5; row++) {
                         next[row][col] = randomCol[row];
                     }
+                    // Toujours forcer les jokers verrouillés
+                    if (jokerTurnsLeft > 0) {
+                        lockedJokerPositions.forEach(pos => {
+                            const r = Math.floor(pos / 5);
+                            const c = pos % 5;
+                            next[r][c] = "JOKER";
+                        });
+                    }
                     return next;
                 });
             }, 30);
-            
             spinTimeouts.current[col] = setTimeout(() => {
                 clearInterval(spinIntervals.current[col]);
-                const colSymbols = spinColumn(col);
+                const colSymbols = spinColumn(col, jokerTurnsLeft > 0);
                 setReels(prev => {
                     const next = prev.map(row => [...row]);
                     for (let row = 0; row < 5; row++) {
@@ -537,32 +524,65 @@ export default function PirateSlotsGame() {
                             next[row][col] = colSymbols[row];
                         }
                     }
+                    // Toujours forcer les jokers verrouillés dans la grille finale
+                    if (jokerTurnsLeft > 0) {
+                        lockedJokerPositions.forEach(pos => {
+                            const r = Math.floor(pos / 5);
+                            const c = pos % 5;
+                            next[r][c] = "JOKER";
+                        });
+                    }
                     return next;
                 });
-                
                 if (col === 4) {
                     setSpinAnim(false);
                     setSpinningCols([false, false, false, false, false]);
                     setIsSpinning(false);
-                    finalizeSpin(currentReels as SlotSymbolId[][]);
+                    // Toujours forcer les jokers verrouillés dans la grille finale
+                    let forcedFinal = currentReels.map(row => [...row]);
+                    if (jokerTurnsLeft > 0) {
+                        lockedJokerPositions.forEach(pos => {
+                            const r = Math.floor(pos / 5);
+                            const c = pos % 5;
+                            forcedFinal[r][c] = "JOKER";
+                        });
+                    }
+                    finalizeSpin(forcedFinal as SlotSymbolId[][]);
                 }
             }, 1200 * (col + 1));
         }
     }
-
     // Réinitialise les flags à la fin du bonus
     React.useEffect(() => {
         if (jokerTurnsLeft === 0) {
             setJokerVideoPlayed(false);
             setPowerVideoPlayed(false);
             setRangerVideoPlayed(false);
-            setBonusVideoPlayed({ JOKER: false, BOOBA: false, SPARTA: false, EXP: false });
+            setBonusVideoPlayed({
+              JOKER: false,
+              BOOBA: false,
+              SPARTA: false,
+              EXP: false,
+              POWER: false,
+              RANGER: false,
+              BAT: false
+            });
         }
     }, [jokerTurnsLeft]);
-
-    // Ajout d'un flag pour stopper le bonus auto-spin
+    // Réinitialise les flags vidéos au démarrage de l'appli
+    React.useEffect(() => {
+        setBonusVideoPlayed({
+            JOKER: false,
+            BOOBA: false,
+            SPARTA: false,
+            EXP: false,
+            POWER: false,
+            RANGER: false,
+            BAT: false
+        });
+    }, []);
+    // Ajout d'un flag pour stopper le bonus en auto-spin
     const autoBonusStopRef = useRef(false);
-
     function finalizeSpin(grid?: SlotSymbolId[][]) {
         const finalGrid = grid || reels;
         let payout = 0;
@@ -584,7 +604,9 @@ export default function PirateSlotsGame() {
         if (jackpotElephant) {
             payout = bet * 50;
             triggerFx("JACKPOT", 1400);
-            winCombos = getWinningCombos(finalGrid).filter(combo => combo.every(idx => finalGrid[Math.floor(idx/5)][idx%5] === "ELEPHANT")).flat();
+            winCombos = getWinningCombos(finalGrid)
+                .filter(combo => combo.every(idx => finalGrid[Math.floor(idx/5)][idx%5] === "ELEPHANT"))
+                .flat();
             // Son d'alerte uniquement pour l'événement éléphant (vidéo booba) - volume augmenté
             const alert = new Audio(alerteSound);
             alert.volume = 0.8;
@@ -594,7 +616,9 @@ export default function PirateSlotsGame() {
         } else if (jackpotSoldat) {
             payout = bet * 40;
             triggerFx("BIGWIN", 1200);
-            winCombos = getWinningCombos(finalGrid).filter(combo => combo.every(idx => finalGrid[Math.floor(idx/5)][idx%5] === "SOLDAT")).flat();
+            winCombos = getWinningCombos(finalGrid)
+                .filter(combo => combo.every(idx => finalGrid[Math.floor(idx/5)][idx%5] === "SOLDAT"))
+                .flat();
             setShowCashout(true); // BIGWIN = cashout obligatoire
             setCannotSpinUntil(Date.now() + 30000); // 30s max de lock
         } else {
@@ -609,7 +633,6 @@ export default function PirateSlotsGame() {
                 // Trouve tous les indices des COIN
                 winCombos = flat.map((s, i) => s === "COIN" ? i : -1).filter(i => i !== -1);
             }
-            
             // Vérifie aussi les gains par ligne/colonne/diagonale pour d'autres symboles
             const allWinCombos = getWinningCombos(finalGrid);
             if (allWinCombos.length > 0 && payout === 0) {
@@ -617,15 +640,13 @@ export default function PirateSlotsGame() {
                 winCombos = allWinCombos.flat();
                 payout = bet * 3; // Gain standard pour une ligne complète
             }
-            
             if (payout >= bet * 50) triggerFx("BIGWIN", 1000);
             else if (payout > 0) triggerFx("WIN", 800);
         }
-        
         setLastPayout(Math.min(payout, 1000000)); // Limite le gain max à 1 000 000
         if (payout > 0) {
             setCredits((c) => c + Math.min(payout, 1000000));
-            
+            setTotalWon(prev => prev + Math.min(payout, 1000000)); // Ajout incrément total gagné
             // Adapter le nombre de lingots selon le type de gain
             let coinsToShow = 1;
             if (payout >= bet * 50) {
@@ -637,7 +658,6 @@ export default function PirateSlotsGame() {
             } else if (payout >= bet * 2) {
                 coinsToShow = 3; // WIN moyen : quelques lingots
             }
-            
             setCoinDropCount(coinsToShow);
             setShowCoinDrop(true);
             sfx.play("coins", { gain: 0.9 });
@@ -645,7 +665,6 @@ export default function PirateSlotsGame() {
             if (payout >= bet * 50) sfx.play("jackpot", { gain: 1.0 });
             else if (payout >= bet * 5) sfx.play("bigwin", { gain: 0.95 });
             else sfx.play("win", { gain: 0.85 });
-            
             // Ajouter bingo en loop pour les big wins et payouts supérieurs
             if (payout >= bet * 5) {
                 if (!bingoAudioRef.current) {
@@ -660,47 +679,77 @@ export default function PirateSlotsGame() {
                 bingoAudioRef.current.play();
             }
         }
-        
         // Highlight pirates
         // Correction : utiliser la grille affichée (reels) pour le mapping, pas la grille finale à plat
         const piratesIdx = reels.flat().map((s, i) => s === "PIRATE" ? i : -1).filter(i => i !== -1);
         setHighlightPirates(piratesIdx);
-        
         // Highlight uniquement si gain - mise à jour des cases gagnantes
         if (payout > 0 && winCombos.length > 0) {
             setHighlightWins([...new Set(winCombos)]);
         } else {
             setHighlightWins([]);
         }
-        
         // Gestion des jokers - compter le nombre de jokers
         if (jokerTurnsLeft > 0) {
+            // --- AJOUT FLUSH BONUS ---
+            const flushCount = countFlushes(finalGrid);
+            if (flushCount >= 3) {
+                setJokerTurnsLeft(prev => prev + flushCount);
+            }
+            // --- FIN AJOUT FLUSH BONUS ---
             // On est déjà en mode bonus, on regarde les nouveaux symboles apparus
-            // Ajoute 1 tour pour chaque nouveau JOKER non verrouillé
-            const piratesCount = flat.filter(s => s === "PIRATE").length;
             const newJokers = flat.map((s, i) => (s === "JOKER" && !lockedJokerPositions.includes(i)) ? i : -1).filter(i => i !== -1);
-            setJokerTurnsLeft(prev => prev + piratesCount + newJokers.length - 1); // -1 car on consomme un tour
+            // Correction : n'ajoute que les nouveaux jokers de ce spin, limite à 5 tours max ajoutés par spin
+            const bonusToAdd = newJokers.length;
+            if (bonusToAdd > 0) {
+                setJokerTurnsLeft(prev => prev + Math.min(bonusToAdd, 5));
+            }
             // Verrouille les nouveaux jokers
             if (newJokers.length > 0) {
                 setLockedJokerPositions(prev => [...prev, ...newJokers]);
+                setJokerLockTurns(prev => {
+                    const next = { ...prev };
+                    newJokers.forEach(idx => { next[idx] = 9; });
+                    return next;
+                });
             }
+            // --- AJOUT : décrémente la durée de vie des jokers verrouillés ---
+            setJokerLockTurns(prev => {
+                const next: Record<number, number> = {};
+                Object.entries(prev).forEach(([idx, turns]) => {
+                    const n = Number(idx);
+                    if (lockedJokerPositions.includes(n)) {
+                        if (turns > 1) next[n] = turns - 1;
+                    }
+                });
+                return next;
+            });
+            // --- FIN AJOUT ---
+            // Décrémente le nombre de tours bonus à chaque spin
+            setJokerTurnsLeft(prev => Math.max(0, prev - 1));
+            // On ne vide lockedJokerPositions qu'à la fin du bonus
             if (jokerTurnsLeft - 1 <= 0) {
                 setLockedJokerPositions([]);
+                setJokerLockTurns({});
             }
         } else if (jokerCount >= 3) {
-            // Démarre le mode bonus avec autant de tours et de jokers verrouillés que de JOKER présents
+            // --- Démarre le mode bonus avec 10 tours au lieu du nombre de jokers ---
             const jokerPositions = flat.map((s, i) => s === "JOKER" ? i : -1).filter(i => i !== -1);
-            setJokerTurnsLeft(jokerPositions.length);
+            setJokerTurnsLeft(10); // Fixé à 10 tours
             setLockedJokerPositions(jokerPositions);
+            setJokerLockTurns(() => {
+                const obj: Record<number, number> = {};
+                jokerPositions.forEach(idx => { obj[idx] = 10; }); // Fixé à 10 tours
+                return obj;
+            });
             setShowJoker(true);
             const alert = new Audio(alerteSound);
             alert.volume = 0.8;
             alert.play();
             setTimeout(() => {
-                autoBonusSpin(jokerPositions.length - 1); // 1er spin déjà fait, il en reste n-1
+                autoBonusSpin(9); // 1er spin déjà fait, il en reste 9
             }, 2000);
         }
-        
         // --- Construction de la queue d'événements ---
         const events: GameEvent[] = [];
         // Détection flush total (grille 5x5 de JOKER)
@@ -713,146 +762,57 @@ export default function PirateSlotsGame() {
           events.push({ type: "VIDEO_RANGER" });
           setBonusVideoPlayed(prev => ({ ...prev, RANGER: true }));
         }
-        // Limite chaque vidéo à une seule fois pendant le bonus
-        if (hasFiveElephants(finalGrid) && !bonusVideoPlayed.BOOBA) {
-          events.push({ type: "SFX", src: alerteSound, volume: 0.9 });
-          events.push({ type: "VIDEO_BOoba" });
-          setBonusVideoPlayed(prev => ({ ...prev, BOOBA: true }));
+        // Détection ligne centrale flush (5 JOKER alignés sur la ligne du milieu) => power.mp4
+        const isPowerFlush = finalGrid[2].every(s => s === "JOKER");
+        if (isPowerFlush && !bonusVideoPlayed.POWER && !isFullFlush) {
+          events.push({ type: "VIDEO_POWER" });
+          setBonusVideoPlayed(prev => ({ ...prev, POWER: true }));
         }
-        if (hasFiveSoldats(finalGrid) && !bonusVideoPlayed.SPARTA) {
-          events.push({ type: "SFX", src: alerteSound, volume: 0.9 });
-          events.push({ type: "VIDEO_SPARTA" });
-          setBonusVideoPlayed(prev => ({ ...prev, SPARTA: true }));
-        }
-        if (hasFiveGuns(finalGrid) && !bonusVideoPlayed.EXP) {
-          events.push({ type: "SFX", src: alerteSound, volume: 0.9 });
-          events.push({ type: "VIDEO_EXP" });
-          setBonusVideoPlayed(prev => ({ ...prev, EXP: true }));
-        }
-        if (hasFiveJokers(finalGrid) && !bonusVideoPlayed.JOKER) {
+        // Déclencheur vidéo joker si 5 jokers ou plus (alignés ou non, hors power/ranger)
+        if (jokerCount >= 5 && !bonusVideoPlayed.JOKER && !isPowerFlush && !isFullFlush) {
           events.push({ type: "SFX", src: alerteSound, volume: 0.9 });
           events.push({ type: "VIDEO_JOKER" });
           setBonusVideoPlayed(prev => ({ ...prev, JOKER: true }));
         }
-        // Ajout déclenchement vidéo chauve-souris
-        if (hasFiveBats(finalGrid) && !bonusVideoPlayed.BAT) {
-          events.push({ type: "SFX", src: alerteSound, volume: 0.9 });
-          events.push({ type: "VIDEO_BAT" });
-          setBonusVideoPlayed(prev => ({ ...prev, BAT: true }));
+        // Limite chaque vidéo à une seule fois pendant le bonus
+        // Désactive les vidéos non-joker pendant le bonus joker
+        const isJokerBonus = jokerTurnsLeft > 0;
+        if (!isJokerBonus) {
+          if (hasFiveElephants(finalGrid) && !bonusVideoPlayed.BOOBA) {
+            events.push({ type: "SFX", src: alerteSound, volume: 0.9 });
+            events.push({ type: "VIDEO_BOOBA" });
+            setBonusVideoPlayed(prev => ({ ...prev, BOOBA: true }));
+          }
+          if (hasFiveSoldats(finalGrid) && !bonusVideoPlayed.SPARTA) {
+            events.push({ type: "SFX", src: alerteSound, volume: 0.9 });
+            events.push({ type: "VIDEO_SPARTA" });
+            setBonusVideoPlayed(prev => ({ ...prev, SPARTA: true }));
+          }
+          if (hasFiveGuns(finalGrid) && !bonusVideoPlayed.EXP) {
+            events.push({ type: "SFX", src: alerteSound, volume: 0.9 });
+            events.push({ type: "VIDEO_EXP" });
+            setBonusVideoPlayed(prev => ({ ...prev, EXP: true }));
+          }
         }
-        // mini-jeu coffre en colonnes 0/2/4
-        const hasChestInCol = (col: number) => finalGrid.some(row => row[col] === "CHEST");
-        if (hasChestInCol(0) && hasChestInCol(2) && hasChestInCol(4)) {
-          events.push({ type: "SFX", src: rireMp3, volume: 1.0 });
-          events.push({ type: "MINI_TREASURE" });
-        }
-        // mini-jeu carte (MAP alignés)
-        const mapWinCombo = getWinningCombos(finalGrid).find(combo => combo.every(idx => flat[idx] === "MAP"));
-        if (mapWinCombo) {
+        // Détection du bonus carte au trésor (5 MAP alignés)
+        if (hasFiveMaps(finalGrid) && !showCarteMiniGame) {
           events.push({ type: "MINI_MAP" });
         }
         // Lance la file
         if (events.length) enqueueEvents(events);
-        
         setLog((prev) => [{ time: Date.now(), bet, reels: finalGrid, payout }, ...prev].slice(0, 30));
     }
-
-    function handleCarteMiniGameOpen() {
-        // Stoppe la musique principale
-        pirateAudioRef.current?.pause();
-        // Joue la musique de la chasse au trésor
-        const audio = new Audio(jackMusic);
-        audio.loop = true;
-        audio.volume = 0.6; // volume augmenté (de 0.5 à 0.6)
-        audio.play();
-        setTreasureMusic(audio);
+    function handleEventStart() {
+        fadeMusic(0, 600);
     }
-    function handleCarteMiniGameClose() {
-        // Stoppe la musique de la chasse au trésor
-        treasureMusic?.pause();
-        setTreasureMusic(null);
-        // Relance la musique principale
-        pirateAudioRef.current?.play();
+    function handleEventEnd() {
+        fadeMusic(0.5, 800); // volume réduit après événement (baissé de 0.7 à 0.5)
     }
-
-    // Ajout d'une fonction pour obtenir la couleur selon le symbole
-    function getWinColor(symbol: SlotSymbolId) {
-        switch (symbol) {
-            case "ELEPHANT": return "#ffe082"; // jaune
-            case "SOLDAT": return "#ffd700"; // jaune doré
-            case "PARROT": return "#00e676"; // vert
-            case "BAT": return "#7c4dff"; // violet
-            case "COIN": return "#ff9800"; // orange
-            case "BLUNDERBUSS": return "#ff1744"; // rouge
-            case "MAP": return "linear-gradient(135deg, #ffe082 0%, #00eaff 50%, #ff00ea 100%)"; // multicouleur
-            case "CHEST": return "#8d6e63"; // marron
-            case "PIRATE": return "#222"; // noir
-            case "JOKER": return "#ff00ff"; // magenta/violet brillant pour le joker
-            default: return "#fffbe6";
-        }
-    }
-
-    // Compteur animé pour les gains
-    function AnimatedCounter({ value, duration = 1200, onEnd }: { value: number, duration?: number, onEnd?: () => void }) {
-        const [displayed, setDisplayed] = React.useState(0);
-        React.useEffect(() => {
-            let start = 0;
-            let raf: number;
-            const startTime = performance.now();
-            function animate(now: number) {
-                const elapsed = now - startTime;
-                const progress = Math.min(1, elapsed / duration);
-                const current = Math.round(progress * value);
-                setDisplayed(current);
-                if (progress < 1) {
-                    raf = requestAnimationFrame(animate);
-                } else {
-                    setDisplayed(value);
-                    if (onEnd) onEnd();
-                }
-            }
-            animate(startTime);
-            return () => cancelAnimationFrame(raf);
-        }, [value, duration, onEnd]);
-        return <span>{displayed}</span>;
-    }
-
-    // Compteur animé pour les crédits
-    function AnimatedCredits({ value, onEnd }: { value: number, onEnd?: () => void }) {
-        const [displayed, setDisplayed] = React.useState(value);
-        const prevValue = React.useRef(value);
-        React.useEffect(() => {
-            if (prevValue.current === value) return;
-            let raf: number;
-            const start = prevValue.current;
-            const end = value;
-            const duration = 1200;
-            const startTime = performance.now();
-            function animate(now: number) {
-                const elapsed = now - startTime;
-                const progress = Math.min(1, elapsed / duration);
-                const current = Math.round(start + (end - start) * progress);
-                setDisplayed(current);
-                if (progress < 1) {
-                    raf = requestAnimationFrame(animate);
-                } else {
-                    setDisplayed(end);
-                    prevValue.current = end;
-                    if (onEnd) onEnd();
-                }
-            }
-            animate(startTime);
-            return () => cancelAnimationFrame(raf);
-        }, [value, onEnd]);
-        return <span>{displayed}</span>;
-    }
-
     // Player d'événements séquentiel
     function enqueueEvents(events: GameEvent[]) {
       eventQueueRef.current.push(...events);
       void playNextEvent();
     }
-
     async function playNextEvent() {
       try {
         if (playingEventRef.current) return;
@@ -873,7 +833,7 @@ export default function PirateSlotsGame() {
           return;
         }
         if (next.type.startsWith("VIDEO_")) {
-          if (next.type === "VIDEO_BOoba") setActiveVideo("BOOBA");
+          if (next.type === "VIDEO_BOOBA") setActiveVideo("BOOBA");
           if (next.type === "VIDEO_SPARTA") setActiveVideo("SPARTA");
           if (next.type === "VIDEO_JOKER") setActiveVideo("JOKER");
           if (next.type === "VIDEO_POWER") setActiveVideo("POWER");
@@ -884,6 +844,13 @@ export default function PirateSlotsGame() {
           return;
         }
         if (next.type === "MINI_TREASURE") {
+          // Compte le nombre de drapeaux pirates sur la grille
+          const pirateFlagsCount = reels.flat().filter(s => s === "PIRATE").length;
+          if (pirateFlagsCount >= 3) {
+            setMiniGameShots(3 + (pirateFlagsCount - 3)); // 3 tirs de base + bonus
+          } else {
+            setMiniGameShots(3);
+          }
           setShowMiniGame(true);
           return;
         }
@@ -899,12 +866,44 @@ export default function PirateSlotsGame() {
         alert('Erreur dans le bonus, la partie reprend.');
       }
     }
+    const totalCoinSoundDuration = 1000; // Durée totale de l'effet sonore de pièces
+const singleCoinSoundDuration = 200; // Durée d'un son de pièce unique
+function playCoinSound(count: number) {
+    if (count <= 0) return;
+    const sound = new Audio(bingoSound);
+    sound.volume = 0.9;
+    sound.play();
+    // Répète le son pour chaque pièce, en espérant qu'elles tombent à des intervalles différents
+    for (let i = 1; i < count; i++) {
+        setTimeout(() => {
+            const coinSound = new Audio(bingoSound);
+            coinSound.volume = 0.9;
+            coinSound.play();
+        }, singleCoinSoundDuration * i);
+    }
+}
+    const [autoSpin, setAutoSpin] = useState(false); // Ajout état auto-spin
+    // Met en pause l'auto-spin lors d'un cashout
+    React.useEffect(() => {
+        if (showCashout && autoSpin) {
+            setAutoSpin(false);
+        }
+    }, [showCashout, autoSpin]);
+    // Ajout d'un effet pour gérer le mode auto-spin
+    React.useEffect(() => {
+        if (!autoSpin) return;
+        if (!canSpin || isSpinning || showCashout) return;
+        const autoSpinTimeout = setTimeout(() => {
+            spin();
+        }, 900); // délai entre spins
+        return () => clearTimeout(autoSpinTimeout);
+    }, [autoSpin, canSpin, isSpinning, credits, bet, showCashout]);
 
     return (
         <div
             className={`gameRoot fx-${fx.toLowerCase()}`}
 
-            onMouseDown={() => {
+onMouseDown={() => {
                 if (showIntro) setShowIntro(false);
                 if (!sfx.ready) sfx.unlock();
             }}
@@ -946,13 +945,11 @@ export default function PirateSlotsGame() {
                     </div>
                 </div>
             )}
-
             <BrumeBg />
             <LanternGlow />
             <FxOverlay fx={fx} />
-
             {/* ZONE CENTRALE */}
-            <div className="slot-center-area">
+            <div className="slot-center-area" style={{ marginTop: '4vh' }}>
                 <h1 style={{ fontSize: 'clamp(32px, 8vw, 54px)', textShadow: "2px 2px 12px #000", display: 'flex', alignItems: 'center', gap: 32, justifyContent: 'center', margin: '2vw 0 2vw 0' }}>
                     <img src={drapImg} alt="drapeau pirate" style={{ height: 90, verticalAlign: 'middle', marginRight: 18 }} />
                     <span style={{ fontWeight: 900, letterSpacing: 2, color: '#ffe082', textShadow: '2px 2px 12px #000' }}>
@@ -965,7 +962,6 @@ export default function PirateSlotsGame() {
                     {reels.flat().length === 0 && (
                         <div className="loader" />
                     )}
-
                     {reels.flat().map((sym, idx) => {
                         // Correction flush : forcer l'affichage du JOKER sur les cases verrouillées pendant le bonus
                         const isJokerLocked = jokerTurnsLeft > 0 && lockedJokerPositions.includes(idx);
@@ -1045,34 +1041,44 @@ export default function PirateSlotsGame() {
 
                     {/* Overlay SVG pour relier les cases gagnantes, seulement si gain */}
                     {highlightWins.length >= 2 && <WinLineOverlay winIndexes={highlightWins} />}
+
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'center', marginTop: 10 }}>
+                <div style={{ display: 'flex', justifyContent: 'center', marginTop: 10, gap: 12 }}>
                   {showCashout ? (
                     <button
                       className="spin-btn"
                       onClick={() => { setShowCashout(false); setCannotSpinUntil(0); }}
-                      style={{ minWidth: 120, minHeight: 44, fontSize: 22, background: '#ffd700', color: '#222', fontWeight: 900 }}
+                      style={{ minWidth: 320, minHeight: 44, fontSize: 22, background: '#ffd700', color: '#222', fontWeight: 900, width: '60vw', maxWidth: 600 }}
                     >
                       Encaisser
                     </button>
                   ) : (
-                    <button
-                      className="spin-btn"
-                      onClick={spin}
-                      disabled={!canSpin && !isSpinning}
-                      style={{ minWidth: 120, minHeight: 44, fontSize: 22 }}
-                    >
-                      {isSpinning ? 'STOP' : 'SPIN'}
-                    </button>
+                    <>
+                      <button
+                        className="spin-btn"
+                        onClick={spin}
+                        disabled={!canSpin && !isSpinning}
+                        style={{ minWidth: 120, minHeight: 44, fontSize: 22 }}
+                      >
+                        {isSpinning ? 'STOP' : 'SPIN'}
+                      </button>
+                      <button
+                        className="spin-btn"
+                        onClick={() => setAutoSpin(a => !a)}
+                        disabled={!canSpin && !isSpinning}
+                        style={{ minWidth: 120, minHeight: 44, fontSize: 22, background: autoSpin ? '#ff4081' : '#ffe082', color: autoSpin ? '#fff' : '#222', fontWeight: 900 }}
+                      >
+                        {autoSpin ? 'STOP AUTO' : 'AUTO SPIN'}
+                      </button>
+                    </>
                   )}
                 </div>
             </div>
-
             {/* Historique - N'affiche que les gains */}
             <div style={{
                 position: "absolute",
                 left: 0,
-                bottom: 64,
+                bottom: 90, // Remonté pour être plus visible
                 width: "100vw",
                 color: "#ffe082",
                 fontSize: 18,
@@ -1110,7 +1116,6 @@ export default function PirateSlotsGame() {
                         const winningSymbol = Object.entries(symbolCount)
                             .sort((a, b) => b[1] - a[1])[0][0] as SlotSymbolId;
                         const symbolElement = symbolImages[winningSymbol];
-                        
                         return (
                             <div
                                 key={x.time}
@@ -1190,74 +1195,98 @@ export default function PirateSlotsGame() {
             🃏 TOURS BONUS : {jokerTurnsLeft}
         </span>
     )}
+    {/* Bouton Refound */}
+    <button
+        style={{ marginLeft: 16, padding: "4px 18px", fontSize: 18, fontWeight: 700, background: "#00e676", color: "#222", borderRadius: 8, border: "none", boxShadow: "0 0 8px #00e676" }}
+        onClick={() => setCredits(c => c + 2000)}
+    >
+        Refound +2000
+    </button>
 </div>
-
             {/* FX visuels */}
             {showBat && <BatAnimation />}
             {showCoinDrop && <CoinDropAnimation count={coinDropCount} />}
             {showShot && <BlunderbussShotAnimation />}
-
             {/* Overlay vidéo */}
             {activeVideo !== "NONE" && (
   <div style={{
-    position: "fixed", left: 0, top: 0, width: "100vw", height: "100vh",
-    background: "rgba(0,0,0,0.45)", // Fond semi-transparent pour laisser voir le jeu
+    position: "fixed",
+    left: 0,
+    top: 0,
+    width: "100vw",
+    height: "100vh",
+    display: "flex",
+    alignItems: "flex-start",
+    justifyContent: "center",
+    pointerEvents: "none",
     zIndex: 9999,
-    display: "flex", alignItems: "center", justifyContent: "center",
-    pointerEvents: "none"
+    background: "transparent"
   }}>
-    <video
-      src={
-        activeVideo === "BOOBA" ? boobaVideo :
-        activeVideo === "SPARTA" ? spartaVideo :
-        activeVideo === "JOKER" ? jokerVideo :
-        activeVideo === "POWER" ? powerVideo :
-        activeVideo === "RANGER" ? rangerVideo :
-        activeVideo === "BAT" ? require('./videos/bat.mp4') :
-        expVideo
-      }
-      autoPlay
-      controls={false}
-      muted={false}
-      style={{
-        maxWidth: "96vw", maxHeight: "92vh",
-        borderRadius: 24,
-        boxShadow: "0 0 64px 16px #000, 0 0 32px 8px #ffe082",
-        opacity: 0.7,
-        pointerEvents: "none",
-        border: "4px solid #ffe082"
-      }}
-      ref={el => { if (el) el.volume = 1.0; }}
-      onEnded={() => {
-        setActiveVideo("NONE");
-        handleEventEnd();
-        playingEventRef.current = false;
-        void playNextEvent();
-      }}
-      onError={() => {
-        setActiveVideo("NONE");
-        handleEventEnd();
-        playingEventRef.current = false;
-        void playNextEvent();
-      }}
-    />
+    <div style={{
+      position: "absolute",
+      top: '8vh', // Centré sur le titre Funesterie
+      left: 0,
+      width: "100vw",
+      display: "flex",
+      justifyContent: "center",
+      pointerEvents: "none"
+    }}>
+      <video
+        src={activeVideo === "BOOBA" ? boobaVideo :
+          activeVideo === "SPARTA" ? spartaVideo :
+          activeVideo === "JOKER" ? jokerVideo :
+          activeVideo === "POWER" ? powerVideo :
+          activeVideo === "RANGER" ? rangerVideo :
+          activeVideo === "BAT" ? batVideo :
+          activeVideo === "EXP" ? expVideo :
+          ""}
+        autoPlay
+        controls={false}
+        muted={false}
+        style={{
+          maxWidth: "80vw",
+          maxHeight: "40vh",
+          borderRadius: 24,
+          boxShadow: "0 0 64px 16px #000, 0 0 32px 8px #ffe082",
+          opacity: 0.8,
+          pointerEvents: "none",
+          border: "4px solid #ffe082"
+        }}
+        ref={el => { if (el) el.volume = 1.0; }}
+        onEnded={() => {
+          setActiveVideo("NONE");
+          handleEventEnd();
+          playingEventRef.current = false;
+          void playNextEvent();
+        }}
+        onError={() => {
+          setActiveVideo("NONE");
+          handleEventEnd();
+          playingEventRef.current = false;
+          void playNextEvent();
+        }}
+      />
+    </div>
   </div>
 )}
-
             {/* Mini-jeu Chasse au Trésor */}
             {showMiniGame && (
                 <MiniTreasureGame
                     onClose={() => {
                       setShowMiniGame(false);
+                      resetAllBonusVideos(setBonusVideoPlayed); // Ajouté
                       playingEventRef.current = false;
                       void playNextEvent();
                     }}
                     onWin={(reward) => {
                         setCredits(c => c + reward);
                         setShowMiniGame(false);
+                        resetAllBonusVideos(setBonusVideoPlayed); // Ajouté
                         playingEventRef.current = false;
                         void playNextEvent();
                     }}
+                    shots={miniGameShots}
+                    resetBonusVideos={() => resetAllBonusVideos(setBonusVideoPlayed)}
                 />
             )}
             {/* Mini-jeu Carte au Trésor (MAP x3) */}
@@ -1266,6 +1295,7 @@ export default function PirateSlotsGame() {
                     onClose={() => {
                       handleCarteMiniGameClose();
                       setShowCarteMiniGame(false);
+                      resetAllBonusVideos(setBonusVideoPlayed); // Ajouté
                       playingEventRef.current = false;
                       void playNextEvent();
                     }}
@@ -1273,6 +1303,7 @@ export default function PirateSlotsGame() {
                         setCredits(c => c + reward);
                         handleCarteMiniGameClose();
                         setShowCarteMiniGame(false);
+                        resetAllBonusVideos(setBonusVideoPlayed); // Ajouté
                         playingEventRef.current = false;
                         void playNextEvent();
                     }}
@@ -1282,30 +1313,68 @@ export default function PirateSlotsGame() {
         </div>
     );
 }
-
-function hasFiveJokers(grid: SlotSymbolId[][]): boolean {
-    // Compte le nombre de JOKER sur toute la grille, peu importe la position
-    const flat = grid.flat();
-    return flat.filter(s => s === "JOKER").length >= 5;
+function AnimatedCredits({ value }: { value: number }) {
+  return <span>{value}</span>;
 }
-
-// Ajout de la fonction autoBonusSpin pour gérer les spins bonus et décrémenter jokerTurnsLeft
-async function autoBonusSpin(turnsLeft: number) {
-    if (autoBonusStopRef.current || turnsLeft <= 0) {
-        setJokerTurnsLeft(0);
-        setLockedJokerPositions([]);
-        setShowJoker(false);
-        return;
+function AnimatedCounter({ value }: { value: number }) {
+  return <span>{value}</span>;
+}
+function getWinColor(sym: string) {
+  switch (sym) {
+    case "ELEPHANT": return "#ffe082";
+    case "BAT": return "#c00";
+    case "SOLDAT": return "#00eaff";
+    case "BLUNDERBUSS": return "#ff9800";
+    case "MAP": return "#00eaff";
+    default: return "#ffe082";
+  }
+}
+// Fonctions utilitaires manquantes (stubs)
+function hasFiveJokers(grid: SlotSymbolId[][]): boolean {
+    // Lignes
+    for (let i = 0; i < 5; i++) {
+        if (grid[i].every((s) => s === "JOKER")) return true;
     }
-    setJokerTurnsLeft(turnsLeft);
-    setTimeout(async () => {
-        await spin();
-        if (!autoBonusStopRef.current && turnsLeft - 1 > 0) {
-            autoBonusSpin(turnsLeft - 1);
-        } else {
-            setJokerTurnsLeft(0);
-            setLockedJokerPositions([]);
-            setShowJoker(false);
-        }
-    }, 1200);
+    // Colonnes
+    for (let j = 0; j < 5; j++) {
+        if ([0, 1, 2, 3, 4].every((i) => grid[i][j] === "JOKER")) return true;
+    }
+    // Diagonale principale
+    if ([0, 1, 2, 3, 4].every((i) => grid[i][i] === "JOKER")) return true;
+    // Diagonale secondaire
+    if ([0, 1, 2, 3, 4].every((i) => grid[i][4 - i] === "JOKER")) return true;
+    return false;
+}
+function countFlushes(grid: SlotSymbolId[][]): number {
+    let count = 0;
+    // Lignes
+    for (let i = 0; i < 5; i++) {
+        if (grid[i].every((s) => s === "JOKER")) count++;
+    }
+    // Colonnes
+    for (let j = 0; j < 5; j++) {
+        if ([0, 1, 2, 3, 4].every((i) => grid[i][j] === "JOKER")) count++;
+    }
+    // Diagonale principale
+    if ([0, 1, 2, 3, 4].every((i) => grid[i][i] === "JOKER")) count++;
+    // Diagonale secondaire
+    if ([0, 1, 2, 3, 4].every((i) => grid[i][4 - i] === "JOKER")) count++;
+    return count;
+}
+function autoBonusSpin(turns: number): void {}
+function handleCarteMiniGameClose(): void {}
+function hasFiveMaps(grid: SlotSymbolId[][]): boolean {
+    // Lignes
+    for (let i = 0; i < 5; i++) {
+        if (grid[i].every((s) => s === "MAP")) return true;
+    }
+    // Colonnes
+    for (let j = 0; j < 5; j++) {
+        if ([0, 1, 2, 3, 4].every((i) => grid[i][j] === "MAP")) return true;
+    }
+    // Diagonale principale
+    if ([0, 1, 2, 3, 4].every((i) => grid[i][i] === "MAP")) return true;
+    // Diagonale secondaire
+    if ([0, 1, 2, 3, 4].every((i) => grid[i][4 - i] === "MAP")) return true;
+    return false;
 }

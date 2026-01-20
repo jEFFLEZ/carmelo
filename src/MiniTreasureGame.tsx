@@ -1,4 +1,5 @@
-import { useState } from "react";
+import * as React from "react";
+import { useState, useEffect } from "react";
 import marineImg from "./images/marine.png";
 import saphirImg from "./images/saphir.png";
 import rubisImg from "./images/rubis.png";
@@ -24,9 +25,13 @@ type Boat = {
 export default function MiniTreasureGame({
   onClose,
   onWin,
+  shots = 3, // valeur par défaut
+  resetBonusVideos // <-- Ajout d'une prop callback optionnelle
 }: {
   onClose: () => void;
   onWin: (reward: number) => void;
+  shots?: number;
+  resetBonusVideos?: () => void;
 }) {
   const [boats, setBoats] = useState<Boat[]>(() => {
     const indexes = [0, 1, 2, 3, 4, 5, 6, 7, 8]
@@ -41,7 +46,7 @@ export default function MiniTreasureGame({
     }));
   });
 
-  const [shotsLeft, setShotsLeft] = useState(3);
+  const [shotsLeft, setShotsLeft] = useState(shots);
   const [finished, setFinished] = useState(false);
   const [totalWin, setTotalWin] = useState(0);
   const [showResult, setShowResult] = useState(false);
@@ -73,8 +78,31 @@ export default function MiniTreasureGame({
     if (showResult) {
       onWin(totalWin);
       onClose();
+      if (typeof resetBonusVideos === 'function') {
+        resetBonusVideos();
+      }
     }
   }
+
+  // Ajout : reset du jeu si le nombre de tirs change (bonus relancé)
+  useEffect(() => {
+    setBoats(() => {
+      const indexes = [0, 1, 2, 3, 4, 5, 6, 7, 8]
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 3);
+      return Array.from({ length: 9 }, (_, i) => ({
+        id: i,
+        diamond: indexes.includes(i)
+          ? diamonds[indexes.indexOf(i)]
+          : null,
+        sunk: false,
+      }));
+    });
+    setShotsLeft(shots);
+    setFinished(false);
+    setTotalWin(0);
+    setShowResult(false);
+  }, [shots]);
 
   return (
     <div className="miniGameOverlay">

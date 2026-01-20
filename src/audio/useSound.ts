@@ -1,4 +1,5 @@
 // useSound.ts - gestion simple du son pour le slot
+import * as React from "react";
 import { useState } from "react";
 
 export function useSound() {
