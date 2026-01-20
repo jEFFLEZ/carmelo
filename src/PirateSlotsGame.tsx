@@ -691,18 +691,11 @@ const [activeVideo, setActiveVideo] = React.useState<
         }
         // Gestion des jokers - compter le nombre de jokers
         if (jokerTurnsLeft > 0) {
-            // --- AJOUT FLUSH BONUS ---
-            const flushCount = countFlushes(finalGrid);
-            if (flushCount >= 3) {
-                setJokerTurnsLeft(prev => prev + flushCount);
-            }
-            // --- FIN AJOUT FLUSH BONUS ---
-            // On est déjà en mode bonus, on regarde les nouveaux symboles apparus
+            // On ne donne des tours bonus QUE pour les nouveaux jokers apparus (flush = joker)
             const newJokers = flat.map((s, i) => (s === "JOKER" && !lockedJokerPositions.includes(i)) ? i : -1).filter(i => i !== -1);
-            // Correction : n'ajoute que les nouveaux jokers de ce spin, limite à 5 tours max ajoutés par spin
-            const bonusToAdd = newJokers.length;
+            const bonusToAdd = Math.min(newJokers.length, 5); // max 5 tours par spin
             if (bonusToAdd > 0) {
-                setJokerTurnsLeft(prev => prev + Math.min(bonusToAdd, 5));
+                setJokerTurnsLeft(prev => prev + bonusToAdd);
             }
             // Verrouille les nouveaux jokers
             if (newJokers.length > 0) {
@@ -724,7 +717,6 @@ const [activeVideo, setActiveVideo] = React.useState<
                 });
                 return next;
             });
-            // --- FIN AJOUT ---
             // Décrémente le nombre de tours bonus à chaque spin
             setJokerTurnsLeft(prev => Math.max(0, prev - 1));
             // On ne vide lockedJokerPositions qu'à la fin du bonus
@@ -1224,7 +1216,7 @@ onMouseDown={() => {
   }}>
     <div style={{
       position: "absolute",
-      top: '8vh', // Centré sur le titre Funesterie
+      top: '2vh', // plus haut
       left: 0,
       width: "100vw",
       display: "flex",
@@ -1244,13 +1236,13 @@ onMouseDown={() => {
         controls={false}
         muted={false}
         style={{
-          maxWidth: "80vw",
-          maxHeight: "40vh",
-          borderRadius: 24,
-          boxShadow: "0 0 64px 16px #000, 0 0 32px 8px #ffe082",
-          opacity: 0.8,
+          maxWidth: "52vw", // un peu plus large
+          maxHeight: "22vh", // un peu plus haut
+          borderRadius: 18,
+          boxShadow: "0 0 32px 8px #000, 0 0 16px 4px #ffe082",
+          opacity: 0.9,
           pointerEvents: "none",
-          border: "4px solid #ffe082"
+          border: "3px solid #ffe082"
         }}
         ref={el => { if (el) el.volume = 1.0; }}
         onEnded={() => {
